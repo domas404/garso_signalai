@@ -22,7 +22,7 @@ time = np.arange(0, duration, 1/samplerate)
 playback_time = time[len(time)-1]
 
 total_length_to_display = str(timedelta(seconds=playback_time))[2:]
-if(len(total_length_to_display) > 6):
+if (len(total_length_to_display) > 6):
     total_length_to_display = total_length_to_display[:9]
 
 def addMarker():
@@ -134,6 +134,34 @@ def plotStereo():
     axis[channelCount-1].set_xlabel(time_label)
 
     figure.tight_layout()
+
+def getFrameSize(timeFrame):
+    return int(samplerate/1000*timeFrame)
+
+def normalizeData(data):
+    min_val = min(data)
+    max_val = max(data)
+    new_data = []
+    for i in range(0, len(data)):
+        new_data.append((data[i] - min_val) / (max_val - min_val))
+    return new_data
+
+def calculateEnergy(data):
+    timeFrame = 20
+    frameSize = getFrameSize(timeFrame)
+    energy = []
+    frameRate = int(frameSize/2)
+    print("len", len(data)-frameSize, "samplerate", samplerate, "frameRate", frameRate, "frameSize", frameSize)
+    for i in range(0, len(data)-frameSize, frameRate):
+        frameEnergy = 0
+        for j in range(i, i+frameSize):
+            frameEnergy += data[j]**2
+        energy.append(frameEnergy)
+    print(len(energy))
+    plt.plot(energy)
+    plt.show()
+
+calculateEnergy(normalizeData(data))
 
 if(len(data.shape) < 2):
     plotMono()

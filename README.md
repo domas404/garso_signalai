@@ -7,9 +7,9 @@ Nuskaityto failo duomenys atvaizduojami naudojami `matplotlib` biblioteką. Prog
 
 ### Naudojimasis programa
 
-1. Paleidus programą, iššoka standartinio failo pasirinkimo dialogas, kurio pagalba, pasirenkamas norimas `*.wav` tipo failas.
+1. Paleidus programą, iššoka standartinio failo pasirinkimo dialogas, kurio pagalba pasirenkamas norimas `*.wav` tipo failas.
 2. Tuomet komandinėje eilutėje nurodoma žymeklio pozicija laike, garso įrašo trukmės ribose. Jei garso įrašo trukmė nesiekia minutės, nurodomos sekundės, kitu atveju - minutės ir sekundės.
-3. Pateikiama diagrama, kurioje atvaizduojamas garso įrašas, kartu su esminiais parametrais, bei žymeklis pasirinktoje vietoje.
+3. Pateikiama diagrama, kurioje atvaizduojamas garso įrašas, kartu su esminiais parametrais, bei pasirinktoje vietoje esantis žymeklis.
 
 ## 2. Garso signalų analizė laiko srityje
 
