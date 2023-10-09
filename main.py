@@ -146,26 +146,52 @@ def normalizeData(data):
         new_data.append((data[i] - min_val) / (max_val - min_val))
     return new_data
 
-def calculateEnergy(data):
-    timeFrame = 20
-    frameSize = getFrameSize(timeFrame)
-    energy = []
-    frameRate = int(frameSize/2)
-    print("len", len(data)-frameSize, "samplerate", samplerate, "frameRate", frameRate, "frameSize", frameSize)
+def partitionDataIntoFrames(data):
+    timeFrame = 20 # milliseconds
+    frameSize = getFrameSize(timeFrame) # values in one timeFrame
+    frameRate = int(frameSize/2) # frames overlap between each other by 50% of values
+    dataFrames = []
+
     for i in range(0, len(data)-frameSize, frameRate):
-        frameEnergy = 0
+        singleFrame = []
         for j in range(i, i+frameSize):
-            frameEnergy += data[j]**2
+            singleFrame.append(data[j])
+        dataFrames.append(singleFrame)
+
+    # last frame from remaining values
+    singleFrame = []
+    for i in range(len(data)-frameSize, len(data)):
+        singleFrame.append(data[i])
+    dataFrames.append(singleFrame)
+
+    return dataFrames
+
+def calculateEnergy(data):
+    energy = []
+    for i in range(0, len(data)):
+        frameEnergy = 0
+        for j in range(0, len(data[i])):
+            frameEnergy += data[i][j]**2
         energy.append(frameEnergy)
-    print(len(energy))
     plt.plot(energy)
     plt.show()
 
-calculateEnergy(normalizeData(data))
+def calculateNKS(data):
+    NKS = []
+    for i in range(0, len(data)):
+        frameNKS = 0
+        for j in range(1, len(data[i])):
+            frameNKS += abs(1 if data[i][j] >= 0 else -1 - 1 if data[i][j-1] > 0 else -1)
+        frameNKS = frameNKS/(2*len(data[i]))
+        NKS.append(frameNKS)
+    plt.plot(normalizeData(NKS))
+    plt.show()
 
-if(len(data.shape) < 2):
-    plotMono()
-else:
-    plotStereo()
+calculateEnergy(partitionDataIntoFrames(normalizeData(data)))
+calculateNKS(partitionDataIntoFrames(data))
 
-plt.show()
+# if(len(data.shape) < 2):
+#     plotMono()
+# else:
+#     plotStereo()
+# plt.show()
