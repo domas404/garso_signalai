@@ -17,6 +17,13 @@ class FileData:
         self.data = np.array(data, dtype=int)
         self.bit_depth = data.dtype.itemsize * 8
         self.duration = len(data)/samplerate
+        self.channel_count = 1 if(len(data.shape) < 2) else data.shape[1]
+
+    def transposeData(self):
+        if(self.channel_count > 1):
+            new_data = np.array(self.data)
+            new_data = np.transpose(new_data)
+            self.data = new_data.tolist()
 
 def readData():
     file_path = filedialog.askopenfilename()
@@ -103,8 +110,11 @@ def plotMono(file_info, data, time, marker = False, line_wt = 0.5, y_label = '')
 
     plt.show()
 
-# def plotStereo():
-#     x = np.array(time)
+
+
+
+# def plotStereo(file_info, data, time, marker = False, line_wt = 0.5, y_label = ''):
+#     x = time
 
 #     channelCount = data.shape[1]
 #     figure, axis = plt.subplots(channelCount, 1)
@@ -164,13 +174,13 @@ def normalizeData(data):
         new_data.append((data[i] - min_val) / (max_val - min_val))
     return new_data
 
-def splitDataIntoFrames(data, samplerate):
-    timeFrame = 20 # milliseconds
+def splitDataIntoFrames(data, samplerate, timeFrame):
     frameSize = getFrameSize(timeFrame, samplerate) # values in one timeFrame
-    frameRate = int(frameSize/2) # frames overlap between each other by 50% of values
+    frameOverlap = 0.5
+    frameChangeRate = int(frameSize*frameOverlap)
     dataFrames = []
 
-    for i in range(0, len(data)-frameSize, frameRate):
+    for i in range(0, (len(data)//frameChangeRate-1)*frameChangeRate, frameChangeRate):
         singleFrame = []
         for j in range(i, i+frameSize):
             singleFrame.append(data[j])
@@ -184,16 +194,16 @@ def splitDataIntoFrames(data, samplerate):
 
     return dataFrames
 
-def calculateEnergy(file_info, data):
+def calculateEnergy(data):
     energy = []
     for i in range(0, len(data)):
         frameEnergy = 0
         for j in range(0, len(data[i])):
             frameEnergy += data[i][j]**2
         energy.append(frameEnergy)
-    plotMono(file_info, energy, np.arange(0, file_info.duration, file_info.duration/len(energy)), line_wt=1, y_label='Energy')
+    return energy
 
-def calculateZeroCrossingRate(file_info, data):
+def calculateZeroCrossingRate(data):
     ZCR = []
     for i in range(0, len(data)):
         frameNKS = 0
@@ -201,20 +211,47 @@ def calculateZeroCrossingRate(file_info, data):
             frameNKS += abs(1 if data[i][j] >= 0 else -1 - 1 if data[i][j-1] > 0 else -1)
         frameNKS = frameNKS/(2*len(data[i]))
         ZCR.append(frameNKS)
-    plotMono(file_info, ZCR, np.arange(0, file_info.duration, file_info.duration/len(ZCR)), line_wt=1, y_label='Zero-Crossing Rate')
+    return ZCR
+
+def handleMonoSignal(file, plotType):
+
+    if(plotType == "timePlot"):
+        plotMono(file, file.data, np.arange(0, file.duration, 1/file.samplerate), marker=True)
+    else:
+        timeFrame = int(input("Frame size in ms: "))
+        normalized_data = normalizeData(file.data)
+        normalized_data_frames = splitDataIntoFrames(normalized_data, file.samplerate, timeFrame)
+        data_frames = splitDataIntoFrames(file.data, file.samplerate, timeFrame)
+        time = np.arange(0, file.duration, file.duration/len(data_frames))
+
+        if(plotType == "energyPlot"):
+            energy = calculateEnergy(normalized_data_frames)
+            plotMono(file, energy, time, line_wt=1, y_label='Energy')
+        
+        elif(plotType == "zeroCrossingRatePlot"):
+            ZCR = calculateZeroCrossingRate(data_frames)
+            plotMono(file, ZCR, time, line_wt=1, y_label='Zero-Crossing Rate')
+
+def handleStereoSignal(file, plotType):
+    file.transposeData()
 
 def fileMenuDialog():
     file = readData()
     input_ok = False
+    handleSignal = handleMonoSignal if file.channel_count == 1 else handleStereoSignal
+
     while(not input_ok):
         print(f"FILE '{file.file_name}' MENU\n", "[1] Energy plot\n", "[2] ZCR plot\n", "[3] Time plot\n", "[4] Menu")
         plotMenuInput = input("> ")
         if(plotMenuInput == "1"):
-            calculateEnergy(file, splitDataIntoFrames(normalizeData(file.data), file.samplerate))
+            handleSignal(file, "energyPlot")
+            # calculateEnergy(file, splitDataIntoFrames(normalizeData(file.data), file.samplerate))
         elif(plotMenuInput == "2"):
-            calculateZeroCrossingRate(file, splitDataIntoFrames(file.data, file.samplerate))
+            handleSignal(file, "zeroCrossingRatePlot")
+            # calculateZeroCrossingRate(file, splitDataIntoFrames(file.data, file.samplerate))
         elif(plotMenuInput == "3"):
-            plotMono(file, file.data, np.arange(0, file.duration, 1/file.samplerate), marker=True)
+            handleSignal(file, "timePlot")
+            # plotMono(file, file.data, np.arange(0, file.duration, 1/file.samplerate), marker=True)
         elif(plotMenuInput == "4"):
             menuDialog()
             input_ok = True
