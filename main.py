@@ -67,8 +67,7 @@ def createMarker(playback_time):
     if(playback_time > 60):
         markerTimestamp = markerTimestamp/60
     markerPosition = createLegendPatch(label=f"Marker at:\n{convertTimeToReadableString(markerTimestamp)}")
-    plt.axvline(x=markerTimestamp, color='#ff3838')
-    return markerPosition
+    return markerPosition, markerTimestamp
 
 def plotFilePropLegend(channel_count, samplerate, bit_depth):
     channels_label = createLegendPatch(f'{channel_count} channel{"s" if channel_count > 1 else ""}')
@@ -78,18 +77,17 @@ def plotFilePropLegend(channel_count, samplerate, bit_depth):
     leg = plt.legend(handles=handles, handlelength=0, borderpad=0.8, bbox_to_anchor=(1.01, 1), loc='upper left', borderaxespad=0.)
     plt.gca().add_artist(leg)
 
-def plotTimeLegend(duration, marker):
+def plotTimeLegend(duration, marker, markerTime=''):
     timeLegend = []
     if(marker):
-        markerTime = createMarker(duration)
         timeLegend.append(markerTime)
     audioTime = createLegendPatch(f"File length:\n{convertTimeToReadableString(duration)}")
     timeLegend.append(audioTime)
     plt.legend(handles=timeLegend, handlelength=0, borderpad=0.8, bbox_to_anchor=(1.01, 0), loc='lower left', borderaxespad=0.)
 
-def plotMono(file_info, data, time, marker = False, line_wt = 0.5, y_label = ''):
+def plotMono(file, data, time, marker = False, line_wt = 0.5, y_label = ''):
     x = time
-    if(file_info.duration > 60):
+    if(file.duration > 60):
         x = x/60
     y = data
 
@@ -97,71 +95,56 @@ def plotMono(file_info, data, time, marker = False, line_wt = 0.5, y_label = '')
     figure.set_figwidth(12)
     figure.set_figheight(6)
 
-    plt.title(file_info.file_name)
+    plt.title(file.file_name)
     plt.grid(color='#ddd')
     plt.plot(x, y, linewidth=line_wt, color='#4986cc')
 
-    plotFilePropLegend(1, file_info.samplerate, file_info.bit_depth)
-    plotTimeLegend(file_info.duration, marker)
+    plotFilePropLegend(1, file.samplerate, file.bit_depth)
+
+    if(marker):
+        markerTime, markerTimestamp = createMarker(file.duration)
+        plt.axvline(x=markerTimestamp, color='#ff3838')
+        plotTimeLegend(file.duration, marker, markerTime)
+    else:
+        plotTimeLegend(file.duration, marker)
     
-    plt.xlabel(("Time, min" if file_info.duration > 60 else "Time, s"))
+    plt.xlabel(("Time, min" if file.duration > 60 else "Time, s"))
     plt.ylabel(y_label)
     plt.tight_layout()
-
     plt.show()
 
+def plotStereo(file, data, time, marker = False, line_wt = 0.5, y_label = ''):
+    x = time
+    if(file.duration > 60):
+        x = x/60
+    y = data
 
+    figure, axis = plt.subplots(file.channel_count, 1)
+    figure.set_figwidth(12)
+    figure.set_figheight(8)
+    figure.suptitle(os.path.basename(file.file_name))
 
+    plt.subplot(file.channel_count, 1, 1)
+    plotFilePropLegend(1, file.samplerate, file.bit_depth)
 
-# def plotStereo(file_info, data, time, marker = False, line_wt = 0.5, y_label = ''):
-#     x = time
+    if(marker):
+        markerTime, markerTimestamp = createMarker(file.duration)
+        plt.subplot(file.channel_count, 1, file.channel_count)
+        plotTimeLegend(file.duration, marker, markerTime)
+    else:
+        plotTimeLegend(file.duration, marker)
 
-#     channelCount = data.shape[1]
-#     figure, axis = plt.subplots(channelCount, 1)
-#     figure.set_figwidth(13)
-#     figure.set_figheight(8)
+    for i in range(0, file.channel_count):
+        plt.grid(color='#ddd')
+        plt.subplot(file.channel_count, 1, i+1)
+        plt.plot(x, y[i])
+        if(marker):
+            plt.axvline(x=markerTimestamp, color='#ff3838')
 
-#     stereo_array = [ []*1 for i in range(channelCount) ]
-
-#     for i in range(0, channelCount):
-#         for j in range(0, len(data)):
-#             stereo_array[i].append(data[j][i])
-
-#     figure.suptitle(os.path.basename(file_path))
-
-#     mins, secs = addMarker()
-#     markerTimestamp = (mins*60)+secs
-#     time_label = "Time, s"
-
-#     if(playback_time > 60):
-#         x = x/60
-#         markerTimestamp = markerTimestamp/60
-#         time_label = "Time, min"
-
-#     colors = ['#4986cc', '#75aceb']
-    
-#     for i in range(0, channelCount):
-#         axis[i].grid(color='#ddd')
-#         axis[i].plot(x, stereo_array[i], color=colors[i%2], linewidth=0.5)
-#         axis[i].axvline(x=markerTimestamp, color='#ff3838')
-
-#     marker_time_to_display = str(timedelta(minutes=mins, seconds=secs))[2:]
-#     if(len(marker_time_to_display) > 6):
-#         marker_time_to_display = marker_time_to_display[:9]
-#     else:
-#         marker_time_to_display += ".000"
-
-#     markerPosition = mpatches.Patch(color='none', linestyle=':', label=f"Marker at:\n{marker_time_to_display}")
-#     audiotime = mpatches.Patch(color='none', linestyle=':', label=f"File length:\n{total_length_to_display}")
-    
-#     leg = axis[0].legend(handles=plotLegend(channelCount), handlelength=0, borderpad=0.8, bbox_to_anchor=(1.01, 1), loc='upper left', borderaxespad=0.)
-#     axis[0].add_artist(leg)
-#     plt.legend(handles=[markerPosition, audiotime], handlelength=0, borderpad=0.8, bbox_to_anchor=(1.01, 0), loc='lower left', borderaxespad=0.)
-#     axis[channelCount-1].set_xlabel(time_label)
-
-#     figure.tight_layout()
-
-#     plt.show()
+    plt.xlabel(("Time, min" if file.duration > 60 else "Time, s"))
+    plt.ylabel(y_label)
+    plt.tight_layout()
+    plt.show()
 
 def getFrameSize(timeFrame, samplerate):
     return int(samplerate/1000*timeFrame)
@@ -217,6 +200,7 @@ def handleMonoSignal(file, plotType):
 
     if(plotType == "timePlot"):
         plotMono(file, file.data, np.arange(0, file.duration, 1/file.samplerate), marker=True)
+    
     else:
         timeFrame = int(input("Frame size in ms: "))
         normalized_data = normalizeData(file.data)
@@ -235,6 +219,24 @@ def handleMonoSignal(file, plotType):
 def handleStereoSignal(file, plotType):
     file.transposeData()
 
+    if(plotType == "timePlot"):
+        plotStereo(file, file.data, np.arange(0, file.duration, 1/file.samplerate), marker=True, y_label='Values')
+    
+    else:
+        timeFrame = int(input("Frame size in ms: "))
+        normalized_data = normalizeData(file.data)
+        normalized_data_frames = splitDataIntoFrames(normalized_data, file.samplerate, timeFrame)
+        data_frames = splitDataIntoFrames(file.data, file.samplerate, timeFrame)
+        time = np.arange(0, file.duration, file.duration/len(data_frames))
+
+        if(plotType == "energyPlot"):
+            energy = calculateEnergy(normalized_data_frames)
+            plotMono(file, energy, time, line_wt=1, y_label='Energy')
+        
+        elif(plotType == "zeroCrossingRatePlot"):
+            ZCR = calculateZeroCrossingRate(data_frames)
+            plotMono(file, ZCR, time, line_wt=1, y_label='Zero-Crossing Rate')
+
 def fileMenuDialog():
     file = readData()
     input_ok = False
@@ -243,15 +245,16 @@ def fileMenuDialog():
     while(not input_ok):
         print(f"FILE '{file.file_name}' MENU\n", "[1] Energy plot\n", "[2] ZCR plot\n", "[3] Time plot\n", "[4] Menu")
         plotMenuInput = input("> ")
+
         if(plotMenuInput == "1"):
             handleSignal(file, "energyPlot")
-            # calculateEnergy(file, splitDataIntoFrames(normalizeData(file.data), file.samplerate))
+
         elif(plotMenuInput == "2"):
             handleSignal(file, "zeroCrossingRatePlot")
-            # calculateZeroCrossingRate(file, splitDataIntoFrames(file.data, file.samplerate))
+
         elif(plotMenuInput == "3"):
             handleSignal(file, "timePlot")
-            # plotMono(file, file.data, np.arange(0, file.duration, 1/file.samplerate), marker=True)
+
         elif(plotMenuInput == "4"):
             menuDialog()
             input_ok = True
@@ -259,19 +262,17 @@ def fileMenuDialog():
 def menuDialog():
     input_ok = False
     print("MENU\n", "[1] Open file\n", "[2] Quit")
+    
     while(not input_ok):
         menuInput = input("> ")
+
         if(menuInput == '2'):
             print("Exiting...")
             exit()
+
         elif(menuInput == '1'):
             input_ok = True
             fileMenuDialog()
             print("Processing...")
 
 menuDialog()
-
-# if(len(data.shape) < 2):
-#     plotMono(data, np.arange(0, duration, 1/samplerate))
-# else:
-#     plotStereo()
