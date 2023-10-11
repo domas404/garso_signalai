@@ -62,4 +62,4 @@ FILE 'city_traffic.wav' MENU
 > 1
 Enter frame size in ms: 20
 ```
-![energy plot of city_traffic.wav file](plots/city_traffic_energy_20ms.png)
+![energy plot of city_traffic.wav file](plots/elephant_energy_20ms.png)
