@@ -20,15 +20,25 @@ FILE 'Filename.wav' MENU
  [1] Energy plot
  [2] ZCR plot
  [3] Time plot
- [4] Menu
+ [4] Segment plot
+ [5] Menu
 > 
 ```
 3. Pasirinkus `Energy` ir `ZCR` diagramas, reikia papildomai nurodyti šių parametrų skaičiavimui naudojamo kadro ilgį milisekundėmis.
 ```
 > 1
-Frame size in ms: 
+Enter frame size in ms.
+> 
 ```
-   Pasirinkus `Time` diagramą papildomai pasirinktoje vietoje nurodomas žymeklis.
+Pasirinkus `Segment` diagramą taip pat reikia nurodyti ir kadro ilgį ir segmentavimo slenkčio vertę.
+```
+> 4
+Enter frame size in ms.
+> 
+Enter step size.
+> 
+```
+Pasirinkus `Time` diagramą, pasirinktoje vietoje papildomai nurodomas žymeklio laikas.
 ```
 > 3
 audio length: 00:01.498
@@ -47,8 +57,9 @@ FILE 'city_traffic.wav' MENU
  [1] Energy plot
  [2] ZCR plot
  [3] Time plot
- [4] Menu
+ [4] Segment plot
+ [5] Menu
 > 1
-Frame size in ms: 20
+Enter frame size in ms: 20
 ```
 ![energy plot of city_traffic.wav file](plots/city_traffic_energy_20ms.png)

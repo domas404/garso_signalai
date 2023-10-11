@@ -8,7 +8,7 @@ from tkinter.filedialog import askopenfilename
 from scipy.io import wavfile
 from datetime import timedelta
 
-font = {'size': 11}
+font = {'size': 13}
 matplotlib.rc('font', **font)
 
 class FileData:
@@ -45,15 +45,15 @@ def convertTimeToReadableString(timeInSeconds):
     return timeString
 
 def markerInput(duration):
-    print(f"audio length: {convertTimeToReadableString(duration)}")
-    print("Enter marker time:")
+    print(f"Audio length: {convertTimeToReadableString(duration)}")
+    print("Enter marker time.")
     mins = 0
     input_ok = False
     while(not input_ok):
         try:
             if(duration > 60):
-                mins = float(input("Minutes: "))
-            secs = float(input("Seconds: "))
+                mins = float(input("Minutes:\n> "))
+            secs = float(input("Seconds:\n> "))
             if secs >= 60 or secs < 0:
                 raise ValueError("Incorrect time value")
             elif mins*60+secs > duration:
@@ -90,7 +90,7 @@ def plotTimeLegend(duration, marker, markerTime=''):
     timeLegend.append(audioTime)
     plt.legend(handles=timeLegend, handlelength=0, borderpad=0.8, bbox_to_anchor=(1.01, 0), loc='lower left', borderaxespad=0.)
 
-def plotMono(file, data, time, marker = False, line_wt = 0.5, y_label = ''):
+def plotMono(file, data, time, marker = False, segments = [], line_wt = 0.5, y_label = ''):
     x = time
     if(file.duration > 60):
         x = x/60
@@ -98,11 +98,12 @@ def plotMono(file, data, time, marker = False, line_wt = 0.5, y_label = ''):
 
     figure = plt.figure()
     figure.set_figwidth(11)
-    figure.set_figheight(6)
+    figure.set_figheight(4)
 
     plt.title(file.file_name)
     plt.grid(color='#ddd')
     plt.plot(x, y, linewidth=line_wt, color='#4986cc')
+    # plt.locator_params(axis='y', nbins=1)
 
     plotFilePropLegend(1, file.samplerate, file.bit_depth)
 
@@ -112,9 +113,13 @@ def plotMono(file, data, time, marker = False, line_wt = 0.5, y_label = ''):
         plotTimeLegend(file.duration, marker, markerTime)
     else:
         plotTimeLegend(file.duration, marker)
+
+    if(len(segments) > 0):
+        for i in range(0, len(segments)):
+            plt.axvline(x=time[segments[i]], color='#ff3838', lw=line_wt)
     
-    plt.xlabel(("Time, min" if file.duration > 60 else "Time, s"), fontsize=11)
-    plt.ylabel(y_label, fontsize=11)
+    plt.xlabel(("Time, min" if file.duration > 60 else "Time, s"), fontsize=13)
+    plt.ylabel(y_label, fontsize=13)
     plt.tight_layout()
     plt.show()
 
@@ -148,8 +153,8 @@ def plotStereo(file, data, time, marker = False, line_wt = 0.5, y_label = ''):
         if(marker):
             plt.axvline(x=markerTimestamp, color='#ff3838')
 
-    figure.supxlabel(("Time, min" if file.duration > 60 else "Time, s"), fontsize=11)
-    figure.supylabel(y_label, fontsize=11)
+    figure.supxlabel(("Time, min" if file.duration > 60 else "Time, s"), fontsize=13)
+    figure.supylabel(y_label, fontsize=13)
     plt.tight_layout()
     plt.show()
 
@@ -198,10 +203,19 @@ def calculateZeroCrossingRate(data):
     for i in range(0, len(data)):
         frameNKS = 0
         for j in range(1, len(data[i])):
-            frameNKS += abs(1 if data[i][j] >= 0 else -1 - 1 if data[i][j-1] > 0 else -1)
+            frameNKS += abs(1 if data[i][j] >= 0 else -1 - 1 if data[i][j-1] >= 0 else -1)
         frameNKS = frameNKS/(2*len(data[i]))
         ZCR.append(frameNKS)
     return ZCR
+
+def findSegments(data, step):
+    segments = []
+    multiplier = 1
+    for i in range(0, len(data)):
+        if(multiplier*data[i] >= multiplier*step):
+            segments.append(i)
+            multiplier *= (-1)
+    return segments
 
 def handleMonoSignal(file, plotType):
 
@@ -209,7 +223,7 @@ def handleMonoSignal(file, plotType):
         plotMono(file, file.data, np.arange(0, file.duration, 1/file.samplerate), marker=True)
     
     else:
-        timeFrame = int(input("Frame size in ms: "))
+        timeFrame = int(input("Enter frame size in ms.\n> "))
         normalized_data = normalizeData(file.data)
         normalized_data_frames = splitDataIntoFrames(normalized_data, file.samplerate, timeFrame)
         data_frames = splitDataIntoFrames(file.data, file.samplerate, timeFrame)
@@ -217,11 +231,18 @@ def handleMonoSignal(file, plotType):
 
         if(plotType == "energyPlot"):
             energy = calculateEnergy(normalized_data_frames)
-            plotMono(file, energy, time, line_wt=1, y_label='Energy')
+            plotMono(file, normalizeData(energy), time, line_wt=1, y_label='Energy')
+
+        elif(plotType == "segmentPlot"):
+            energy = calculateEnergy(normalized_data_frames)
+            # print(len(energy))
+            step = float(input("Enter step size.\n> "))
+            segments = findSegments(normalizeData(energy), step)
+            plotMono(file, normalizeData(energy), time, segments=segments, line_wt=1, y_label='Energy')
         
         elif(plotType == "zeroCrossingRatePlot"):
             ZCR = calculateZeroCrossingRate(data_frames)
-            plotMono(file, ZCR, time, line_wt=1, y_label='Zero-Crossing Rate')
+            plotMono(file, normalizeData(ZCR), time, line_wt=1, y_label='Zero-Crossing Rate')
 
 def handleStereoSignal(file, plotType):
     
@@ -258,7 +279,7 @@ def fileMenuDialog():
         file.transposeData()
 
     while(not input_ok):
-        print(f"FILE '{file.file_name}' MENU\n", "[1] Energy plot\n", "[2] ZCR plot\n", "[3] Time plot\n", "[4] Menu")
+        print(f"FILE '{file.file_name}' MENU\n", "[1] Energy plot\n", "[2] ZCR plot\n", "[3] Time plot\n", "[4] Segment plot\n", "[5] Menu")
         plotMenuInput = input("> ")
 
         if(plotMenuInput == "1"):
@@ -271,6 +292,9 @@ def fileMenuDialog():
             handleSignal(file, "timePlot")
 
         elif(plotMenuInput == "4"):
+            handleSignal(file, "segmentPlot")
+
+        elif(plotMenuInput == "5"):
             del file
             menuDialog()
             input_ok = True
