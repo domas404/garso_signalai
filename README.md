@@ -37,7 +37,7 @@ Seconds:
 ```
 4. Pateikiama diagrama, kurioje atvaizduojamas garso įrašas, kartu su esminiais parametrais.  
    Pvz.
-   ```
+```
 MENU
  [1] Open file
  [2] Quit
@@ -50,5 +50,5 @@ FILE 'city_traffic.wav' MENU
  [4] Menu
 > 1
 Frame size in ms: 20
-   ```
+```
 ![energy plot of city_traffic.wav file](plots/city_traffic_energy_20ms.png)
