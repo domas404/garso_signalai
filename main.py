@@ -1,11 +1,15 @@
 import numpy as np
 import os
-import matplotlib.pyplot as plt
-import matplotlib.patches as mpatches
+import matplotlib
+from matplotlib import pyplot as plt
+from matplotlib import patches as mpatches
 from tkinter import Tk
 from tkinter.filedialog import askopenfilename
 from scipy.io import wavfile
 from datetime import timedelta
+
+font = {'size': 11}
+matplotlib.rc('font', **font)
 
 class FileData:
     def __init__(self, file_path, samplerate, data):
@@ -93,7 +97,7 @@ def plotMono(file, data, time, marker = False, line_wt = 0.5, y_label = ''):
     y = data
 
     figure = plt.figure()
-    figure.set_figwidth(12)
+    figure.set_figwidth(11)
     figure.set_figheight(6)
 
     plt.title(file.file_name)
@@ -109,8 +113,8 @@ def plotMono(file, data, time, marker = False, line_wt = 0.5, y_label = ''):
     else:
         plotTimeLegend(file.duration, marker)
     
-    plt.xlabel(("Time, min" if file.duration > 60 else "Time, s"))
-    plt.ylabel(y_label)
+    plt.xlabel(("Time, min" if file.duration > 60 else "Time, s"), fontsize=11)
+    plt.ylabel(y_label, fontsize=11)
     plt.tight_layout()
     plt.show()
 
@@ -144,8 +148,8 @@ def plotStereo(file, data, time, marker = False, line_wt = 0.5, y_label = ''):
         if(marker):
             plt.axvline(x=markerTimestamp, color='#ff3838')
 
-    figure.supxlabel(("Time, min" if file.duration > 60 else "Time, s"))
-    figure.supylabel(y_label)
+    figure.supxlabel(("Time, min" if file.duration > 60 else "Time, s"), fontsize=11)
+    figure.supylabel(y_label, fontsize=11)
     plt.tight_layout()
     plt.show()
 
