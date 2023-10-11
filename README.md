@@ -53,7 +53,7 @@ MENU
  [2] Quit
 > 1
 Processing...
-FILE 'city_traffic.wav' MENU
+FILE 'Elephant.wav' MENU
  [1] Energy plot
  [2] ZCR plot
  [3] Time plot
@@ -62,4 +62,4 @@ FILE 'city_traffic.wav' MENU
 > 1
 Enter frame size in ms: 20
 ```
-![energy plot of city_traffic.wav file](plots/elephant_energy_20ms.png)
+![energy plot of Elephant.wav file](plots/elephant_energy_20ms.png)

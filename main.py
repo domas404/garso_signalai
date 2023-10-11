@@ -92,7 +92,7 @@ def plotTimeLegend(duration, marker, markerTime=''):
 
 def plotMono(file, data, time, marker = False, segments = [], line_wt = 0.5, y_label = ''):
     x = time
-    if(file.duration > 60):
+    if(file.duration >= 60):
         x = x/60
     y = data
 
@@ -116,16 +116,16 @@ def plotMono(file, data, time, marker = False, segments = [], line_wt = 0.5, y_l
 
     if(len(segments) > 0):
         for i in range(0, len(segments)):
-            plt.axvline(x=time[segments[i]], color='#ff3838', lw=line_wt)
+            plt.axvline(x=time[segments[i]] if file.duration < 60 else time[segments[i]]/60, color='#ff3838', lw=line_wt)
     
     plt.xlabel(("Time, min" if file.duration > 60 else "Time, s"), fontsize=13)
     plt.ylabel(y_label, fontsize=13)
     plt.tight_layout()
     plt.show()
 
-def plotStereo(file, data, time, marker = False, line_wt = 0.5, y_label = ''):
+def plotStereo(file, data, time, marker = False, segments = [], line_wt = 0.5, y_label = ''):
     x = time
-    if(file.duration > 60):
+    if(file.duration >= 60):
         x = x/60
     y = data
 
@@ -143,6 +143,12 @@ def plotStereo(file, data, time, marker = False, line_wt = 0.5, y_label = ''):
         plotTimeLegend(file.duration, marker, markerTime)
     else:
         plotTimeLegend(file.duration, marker)
+
+    if(len(segments) > 0):
+        for i in range(0, len(segments)):
+            plt.subplot(file.channel_count, 1, i+1)
+            for j in range(0, len(segments[i])):
+                plt.axvline(x=time[segments[i][j]] if file.duration < 60 else time[segments[i][j]]/60, color='#ff3838', lw=line_wt)
 
     colors = ['#4986CC', '#3F4756', '#A3ACBD', '#C66481', '#8D3150']
 
@@ -235,7 +241,6 @@ def handleMonoSignal(file, plotType):
 
         elif(plotType == "segmentPlot"):
             energy = calculateEnergy(normalized_data_frames)
-            # print(len(energy))
             step = float(input("Enter step size.\n> "))
             segments = findSegments(normalizeData(energy), step)
             plotMono(file, normalizeData(energy), time, segments=segments, line_wt=1, y_label='Energy')
@@ -250,7 +255,7 @@ def handleStereoSignal(file, plotType):
         plotStereo(file, file.data, np.arange(0, file.duration, 1/file.samplerate), marker=True, y_label='Values')
     
     else:
-        timeFrame = int(input("Frame size in ms: "))
+        timeFrame = int(input("Enter frame size in ms.\n> "))
         normalized_data_frames, data_frames = [], []
 
         for i in range(0, file.channel_count):
@@ -262,8 +267,18 @@ def handleStereoSignal(file, plotType):
         if(plotType == "energyPlot"):
             energy = []
             for i in range(0, file.channel_count):
-                energy.append(calculateEnergy(normalized_data_frames[i]))
+                energy.append(normalizeData(calculateEnergy(normalized_data_frames[i])))
+            
             plotStereo(file, energy, time, line_wt=1, y_label='Energy')
+
+        elif(plotType == "segmentPlot"):
+            energy, segments = [], []
+            for i in range(0, file.channel_count):
+                energy.append(normalizeData(calculateEnergy(normalized_data_frames[i])))
+            step = float(input("Enter step size.\n> "))
+            for i in range(0, file.channel_count):
+                segments.append(findSegments(energy[i], step))
+            plotStereo(file, energy, time, segments=segments, line_wt=1, y_label='Energy')
         
         elif(plotType == "zeroCrossingRatePlot"):
             ZCR = []
