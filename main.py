@@ -2,13 +2,10 @@ import numpy as np
 import os
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
-import tkinter as tk
-from tkinter import filedialog
+from tkinter import Tk
+from tkinter.filedialog import askopenfilename
 from scipy.io import wavfile
 from datetime import timedelta
-
-root = tk.Tk()
-root.withdraw()
 
 class FileData:
     def __init__(self, file_path, samplerate, data):
@@ -25,14 +22,18 @@ class FileData:
             new_data = np.transpose(new_data)
             self.data = new_data.tolist()
 
+root = Tk()
+root.withdraw()
+
 def readData():
-    file_path = filedialog.askopenfilename()
+    file_path = askopenfilename()
     samplerate, data = wavfile.read(file_path)
     file = FileData(file_path, samplerate, data)
+    root.update()
     return file
 
 def convertTimeToReadableString(timeInSeconds):
-    timeString = str(timedelta(minutes=timeInSeconds//60, seconds=timeInSeconds))[2:]
+    timeString = str(timedelta(seconds=timeInSeconds))[2:]
     if (len(timeString) > 6):
         timeString = timeString[:9]
     else:
@@ -64,9 +65,9 @@ def createLegendPatch(label):
 
 def createMarker(playback_time):
     markerTimestamp = markerInput(playback_time)
+    markerPosition = createLegendPatch(label=f"Marker at:\n{convertTimeToReadableString(markerTimestamp)}")
     if(playback_time > 60):
         markerTimestamp = markerTimestamp/60
-    markerPosition = createLegendPatch(label=f"Marker at:\n{convertTimeToReadableString(markerTimestamp)}")
     return markerPosition, markerTimestamp
 
 def plotFilePropLegend(channel_count, samplerate, bit_depth):
@@ -119,7 +120,7 @@ def plotStereo(file, data, time, marker = False, line_wt = 0.5, y_label = ''):
         x = x/60
     y = data
 
-    figure, axis = plt.subplots(file.channel_count, 1)
+    figure, axis = plt.subplots(nrows=file.channel_count, ncols=1, sharey=True)
     figure.set_figwidth(12)
     figure.set_figheight(8)
     figure.suptitle(os.path.basename(file.file_name))
@@ -127,22 +128,24 @@ def plotStereo(file, data, time, marker = False, line_wt = 0.5, y_label = ''):
     plt.subplot(file.channel_count, 1, 1)
     plotFilePropLegend(1, file.samplerate, file.bit_depth)
 
+    plt.subplot(file.channel_count, 1, file.channel_count)
     if(marker):
         markerTime, markerTimestamp = createMarker(file.duration)
-        plt.subplot(file.channel_count, 1, file.channel_count)
         plotTimeLegend(file.duration, marker, markerTime)
     else:
         plotTimeLegend(file.duration, marker)
 
+    colors = ['#4986CC', '#3F4756', '#A3ACBD', '#C66481', '#8D3150']
+
     for i in range(0, file.channel_count):
-        plt.grid(color='#ddd')
         plt.subplot(file.channel_count, 1, i+1)
-        plt.plot(x, y[i])
+        plt.grid(color='#ddd')
+        plt.plot(x, y[i], linewidth=line_wt, color=colors[i%len(colors)])
         if(marker):
             plt.axvline(x=markerTimestamp, color='#ff3838')
 
-    plt.xlabel(("Time, min" if file.duration > 60 else "Time, s"))
-    plt.ylabel(y_label)
+    figure.supxlabel(("Time, min" if file.duration > 60 else "Time, s"))
+    figure.supylabel(y_label)
     plt.tight_layout()
     plt.show()
 
@@ -217,30 +220,38 @@ def handleMonoSignal(file, plotType):
             plotMono(file, ZCR, time, line_wt=1, y_label='Zero-Crossing Rate')
 
 def handleStereoSignal(file, plotType):
-    file.transposeData()
-
+    
     if(plotType == "timePlot"):
         plotStereo(file, file.data, np.arange(0, file.duration, 1/file.samplerate), marker=True, y_label='Values')
     
     else:
         timeFrame = int(input("Frame size in ms: "))
-        normalized_data = normalizeData(file.data)
-        normalized_data_frames = splitDataIntoFrames(normalized_data, file.samplerate, timeFrame)
-        data_frames = splitDataIntoFrames(file.data, file.samplerate, timeFrame)
-        time = np.arange(0, file.duration, file.duration/len(data_frames))
+        normalized_data_frames, data_frames = [], []
+
+        for i in range(0, file.channel_count):
+            normalized_data_frames.append(splitDataIntoFrames(normalizeData(file.data[i]), file.samplerate, timeFrame))
+            data_frames.append(splitDataIntoFrames(file.data[i], file.samplerate, timeFrame))
+        
+        time = np.arange(0, file.duration, file.duration/len(data_frames[0]))
 
         if(plotType == "energyPlot"):
-            energy = calculateEnergy(normalized_data_frames)
-            plotMono(file, energy, time, line_wt=1, y_label='Energy')
+            energy = []
+            for i in range(0, file.channel_count):
+                energy.append(calculateEnergy(normalized_data_frames[i]))
+            plotStereo(file, energy, time, line_wt=1, y_label='Energy')
         
         elif(plotType == "zeroCrossingRatePlot"):
-            ZCR = calculateZeroCrossingRate(data_frames)
-            plotMono(file, ZCR, time, line_wt=1, y_label='Zero-Crossing Rate')
+            ZCR = []
+            for i in range(0, file.channel_count):
+                ZCR.append(calculateZeroCrossingRate(data_frames[i]))
+            plotStereo(file, ZCR, time, line_wt=1, y_label='Zero-Crossing Rate')
 
 def fileMenuDialog():
     file = readData()
     input_ok = False
     handleSignal = handleMonoSignal if file.channel_count == 1 else handleStereoSignal
+    if(file.channel_count > 1):
+        file.transposeData()
 
     while(not input_ok):
         print(f"FILE '{file.file_name}' MENU\n", "[1] Energy plot\n", "[2] ZCR plot\n", "[3] Time plot\n", "[4] Menu")
@@ -256,13 +267,14 @@ def fileMenuDialog():
             handleSignal(file, "timePlot")
 
         elif(plotMenuInput == "4"):
+            del file
             menuDialog()
             input_ok = True
 
 def menuDialog():
     input_ok = False
     print("MENU\n", "[1] Open file\n", "[2] Quit")
-    
+
     while(not input_ok):
         menuInput = input("> ")
 
@@ -272,7 +284,7 @@ def menuDialog():
 
         elif(menuInput == '1'):
             input_ok = True
-            fileMenuDialog()
             print("Processing...")
+            fileMenuDialog()
 
 menuDialog()
