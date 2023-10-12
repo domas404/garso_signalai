@@ -45,8 +45,7 @@ audio length: 00:01.498
 Enter marker time:
 Seconds: 
 ```
-4. Pateikiama diagrama, kurioje atvaizduojamas garso įrašas, kartu su esminiais parametrais.  
-   Pvz.
+4. Pateikiama diagrama, kurioje atvaizduojamas garso įrašas, kartu su esminiais parametrais. Pvz:
 ```
 MENU
  [1] Open file
@@ -62,4 +61,4 @@ FILE 'Elephant.wav' MENU
 > 1
 Enter frame size in ms: 20
 ```
-![energy plot of Elephant.wav file](plots/elephant_energy_20ms.png)
+![energy plot of Elephant.wav file](plots/elephant_energy_20.png)
