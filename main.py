@@ -82,15 +82,18 @@ def plotFilePropLegend(channel_count, samplerate, bit_depth):
     leg = plt.legend(handles=handles, handlelength=0, borderpad=0.8, bbox_to_anchor=(1.01, 1), loc='upper left', borderaxespad=0.)
     plt.gca().add_artist(leg)
 
-def plotTimeLegend(duration, marker, markerTime=''):
+def plotTimeLegend(duration, marker, markerTime='', timeFrame=0):
     timeLegend = []
+    if(timeFrame > 0):
+        timeFrameLegend = createLegendPatch(f"Frame:\n{timeFrame} ms")
+        timeLegend.append(timeFrameLegend)
     if(marker):
         timeLegend.append(markerTime)
     audioTime = createLegendPatch(f"File length:\n{convertTimeToReadableString(duration)}")
     timeLegend.append(audioTime)
     plt.legend(handles=timeLegend, handlelength=0, borderpad=0.8, bbox_to_anchor=(1.01, 0), loc='lower left', borderaxespad=0.)
 
-def plotMono(file, data, time, marker = False, segments = [], line_wt = 0.5, y_label = ''):
+def plotMono(file, data, time, marker=False, segments=[], line_wt=0.5, y_label='', timeFrame=0):
     x = time
     if(file.duration >= 60):
         x = x/60
@@ -98,7 +101,7 @@ def plotMono(file, data, time, marker = False, segments = [], line_wt = 0.5, y_l
 
     figure = plt.figure()
     figure.set_figwidth(11)
-    figure.set_figheight(4)
+    figure.set_figheight(5)
 
     plt.title(file.file_name)
     plt.grid(color='#ddd')
@@ -111,6 +114,8 @@ def plotMono(file, data, time, marker = False, segments = [], line_wt = 0.5, y_l
         markerTime, markerTimestamp = createMarker(file.duration)
         plt.axvline(x=markerTimestamp, color='#ff3838')
         plotTimeLegend(file.duration, marker, markerTime)
+    elif(timeFrame > 0):
+        plotTimeLegend(file.duration, marker, timeFrame=timeFrame)
     else:
         plotTimeLegend(file.duration, marker)
 
@@ -123,7 +128,7 @@ def plotMono(file, data, time, marker = False, segments = [], line_wt = 0.5, y_l
     plt.tight_layout()
     plt.show()
 
-def plotStereo(file, data, time, marker = False, segments = [], line_wt = 0.5, y_label = ''):
+def plotStereo(file, data, time, marker = False, segments = [], line_wt = 0.5, y_label = '', timeFrame=0):
     x = time
     if(file.duration >= 60):
         x = x/60
@@ -141,6 +146,8 @@ def plotStereo(file, data, time, marker = False, segments = [], line_wt = 0.5, y
     if(marker):
         markerTime, markerTimestamp = createMarker(file.duration)
         plotTimeLegend(file.duration, marker, markerTime)
+    elif(timeFrame > 0):
+        plotTimeLegend(file.duration, marker, timeFrame=timeFrame)
     else:
         plotTimeLegend(file.duration, marker)
 
@@ -226,7 +233,7 @@ def findSegments(data, step):
 def handleMonoSignal(file, plotType):
 
     if(plotType == "timePlot"):
-        plotMono(file, file.data, np.arange(0, file.duration, 1/file.samplerate), marker=True)
+        plotMono(file, file.data, np.arange(0, file.duration, 1/file.samplerate), marker=False)
     
     else:
         timeFrame = int(input("Enter frame size in ms.\n> "))
@@ -237,22 +244,22 @@ def handleMonoSignal(file, plotType):
 
         if(plotType == "energyPlot"):
             energy = calculateEnergy(normalized_data_frames)
-            plotMono(file, normalizeData(energy), time, line_wt=1, y_label='Energy')
+            plotMono(file, normalizeData(energy), time, line_wt=1, y_label='Energy', timeFrame=timeFrame)
 
         elif(plotType == "segmentPlot"):
             energy = calculateEnergy(normalized_data_frames)
             step = float(input("Enter step size.\n> "))
             segments = findSegments(normalizeData(energy), step)
-            plotMono(file, normalizeData(energy), time, segments=segments, line_wt=1, y_label='Energy')
+            plotMono(file, normalizeData(energy), time, segments=segments, line_wt=1, y_label='Energy', timeFrame=timeFrame)
         
         elif(plotType == "zeroCrossingRatePlot"):
             ZCR = calculateZeroCrossingRate(data_frames)
-            plotMono(file, normalizeData(ZCR), time, line_wt=1, y_label='Zero-Crossing Rate')
+            plotMono(file, normalizeData(ZCR), time, line_wt=1, y_label='Zero-Crossing Rate', timeFrame=timeFrame)
 
 def handleStereoSignal(file, plotType):
     
     if(plotType == "timePlot"):
-        plotStereo(file, file.data, np.arange(0, file.duration, 1/file.samplerate), marker=True, y_label='Values')
+        plotStereo(file, file.data, np.arange(0, file.duration, 1/file.samplerate), marker=False, y_label='Values')
     
     else:
         timeFrame = int(input("Enter frame size in ms.\n> "))
@@ -269,7 +276,7 @@ def handleStereoSignal(file, plotType):
             for i in range(0, file.channel_count):
                 energy.append(normalizeData(calculateEnergy(normalized_data_frames[i])))
             
-            plotStereo(file, energy, time, line_wt=1, y_label='Energy')
+            plotStereo(file, energy, time, line_wt=1, y_label='Energy', timeFrame=timeFrame)
 
         elif(plotType == "segmentPlot"):
             energy, segments = [], []
@@ -278,13 +285,13 @@ def handleStereoSignal(file, plotType):
             step = float(input("Enter step size.\n> "))
             for i in range(0, file.channel_count):
                 segments.append(findSegments(energy[i], step))
-            plotStereo(file, energy, time, segments=segments, line_wt=1, y_label='Energy')
+            plotStereo(file, energy, time, segments=segments, line_wt=1, y_label='Energy', timeFrame=timeFrame)
         
         elif(plotType == "zeroCrossingRatePlot"):
             ZCR = []
             for i in range(0, file.channel_count):
                 ZCR.append(calculateZeroCrossingRate(data_frames[i]))
-            plotStereo(file, ZCR, time, line_wt=1, y_label='Zero-Crossing Rate')
+            plotStereo(file, ZCR, time, line_wt=1, y_label='Zero-Crossing Rate', timeFrame=timeFrame)
 
 def fileMenuDialog():
     file = readData()
