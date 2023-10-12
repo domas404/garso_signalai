@@ -30,7 +30,7 @@ FILE 'Filename.wav' MENU
 Enter frame size in ms.
 > 
 ```
-Pasirinkus `Segment` diagramą taip pat reikia nurodyti ir kadro ilgį ir segmentavimo slenkčio vertę.
+Pasirinkus `Segment` diagramą reikia nurodyti kadro ilgį bei segmentavimo slenkčio vertę.
 ```
 > 4
 Enter frame size in ms.
@@ -59,6 +59,7 @@ FILE 'Elephant.wav' MENU
  [4] Segment plot
  [5] Menu
 > 1
-Enter frame size in ms: 20
+Enter frame size in ms.
+> 20
 ```
 ![energy plot of Elephant.wav file](plots/elephant_energy_20.png)
