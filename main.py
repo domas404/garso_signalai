@@ -151,12 +151,6 @@ def plotStereo(file, data, time, marker = False, segments = [], line_wt = 0.5, y
     else:
         plotTimeLegend(file.duration, marker)
 
-    if(len(segments) > 0):
-        for i in range(0, len(segments)):
-            plt.subplot(file.channel_count, 1, i+1)
-            for j in range(0, len(segments[i])):
-                plt.axvline(x=time[segments[i][j]] if file.duration < 60 else time[segments[i][j]]/60, color='#ff3838', lw=line_wt)
-
     colors = ['#4986CC', '#3F4756', '#A3ACBD', '#C66481', '#8D3150']
 
     for i in range(0, file.channel_count):
@@ -166,6 +160,12 @@ def plotStereo(file, data, time, marker = False, segments = [], line_wt = 0.5, y
         if(marker):
             plt.axvline(x=markerTimestamp, color='#ff3838')
 
+    if(len(segments) > 0):
+        for i in range(0, len(segments)):
+            plt.subplot(file.channel_count, 1, i+1)
+            for j in range(0, len(segments[i])):
+                plt.axvline(x=time[segments[i][j]] if file.duration < 60 else time[segments[i][j]]/60, color='#ff3838', lw=line_wt)
+    
     figure.supxlabel(("Time, min" if file.duration > 60 else "Time, s"), fontsize=13)
     figure.supylabel(y_label, fontsize=13)
     plt.tight_layout()
