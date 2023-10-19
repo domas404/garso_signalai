@@ -107,7 +107,7 @@ def plot_mono(file, data, time, marker=False, segments=[], line_wt=0.5, y_label=
     plt.grid(color='#ddd')
     plt.plot(x, y, linewidth=line_wt, color='#4986cc')
 
-    plot_file_property_legend(1, file.samplerate, file.bit_depth)
+    plot_file_property_legend(file.channel_count, file.samplerate, file.bit_depth)
 
     if(marker):
         marker_time, marker_timestamp = create_marker(file.duration)
@@ -139,7 +139,7 @@ def plot_stereo(file, data, time, marker = False, segments = [], line_wt = 0.5, 
     figure.suptitle(os.path.basename(file.file_name))
 
     plt.subplot(file.channel_count, 1, 1)
-    plot_file_property_legend(1, file.samplerate, file.bit_depth)
+    plot_file_property_legend(file.channel_count, file.samplerate, file.bit_depth)
 
     plt.subplot(file.channel_count, 1, file.channel_count)
     if(marker):
@@ -182,7 +182,7 @@ def normalize_data(data):
     return new_data
 
 def split_data_into_frames(data, samplerate, time_frame):
-    frame_size = get_frame_size(time_frame, samplerate) # values in one time_frame
+    frame_size = get_frame_size(time_frame, samplerate)
     frame_overlap = 0.5
     frame_change_rate = int(frame_size*frame_overlap)
     data_frames = []
@@ -193,7 +193,6 @@ def split_data_into_frames(data, samplerate, time_frame):
             single_frame.append(data[j])
         data_frames.append(single_frame)
 
-    # last frame from remaining values
     single_frame = []
     for i in range(len(data)-frame_size, len(data)):
         single_frame.append(data[i])
@@ -239,7 +238,8 @@ def handle_mono_signal(file, plot_type):
         normalized_data = normalize_data(file.data)
         normalized_data_frames = split_data_into_frames(normalized_data, file.samplerate, time_frame)
         data_frames = split_data_into_frames(file.data, file.samplerate, time_frame)
-        time = np.arange(0, file.duration, file.duration/len(data_frames))
+        time = np.arange(0, file.duration*100, file.duration*100/len(data_frames))
+        time = time*0.01
 
         if(plot_type == "energyPlot"):
             energy = calculate_energy(normalized_data_frames)
@@ -268,7 +268,8 @@ def handle_stereo_signal(file, plot_type):
             normalized_data_frames.append(split_data_into_frames(normalize_data(file.data[i]), file.samplerate, time_frame))
             data_frames.append(split_data_into_frames(file.data[i], file.samplerate, time_frame))
         
-        time = np.arange(0, file.duration, file.duration/len(data_frames[0]))
+        time = np.arange(0, file.duration*100, file.duration*100/len(data_frames[0]))
+        time = time*0.01
 
         if(plot_type == "energyPlot"):
             energy = []
