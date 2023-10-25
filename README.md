@@ -21,7 +21,8 @@ FILE 'Filename.wav' MENU
  [2] ZCR plot
  [3] Time plot
  [4] Segment plot
- [5] Menu
+ [5] Fade effect
+ [6] Menu
 > 
 ```
 3. Pasirinkus `Energy` ir `ZCR` diagramas, reikia papildomai nurodyti šių parametrų skaičiavimui naudojamo kadro ilgį milisekundėmis.
@@ -41,9 +42,20 @@ Enter step size.
 Pasirinkus `Time` diagramą, pasirinktoje vietoje papildomai nurodomas žymeklio laikas.
 ```
 > 3
-audio length: 00:01.498
-Enter marker time:
-Seconds: 
+Audio length: 00:01.498
+Enter marker time.
+Seconds:
+> 
+```
+Pasirinkus `Fade effect`, reikia nurodyti *fade* efekto trukmę ir pasirinkti kitimo dėsnį.
+```
+Audio length: 00:01.498
+Enter fade time in ms:
+> 100
+Choose fade type:
+[1] Linear
+[2] Logarithmic
+>
 ```
 4. Pateikiama diagrama, kurioje atvaizduojamas garso įrašas, kartu su esminiais parametrais. Pvz:
 ```
@@ -57,7 +69,8 @@ FILE 'Elephant.wav' MENU
  [2] ZCR plot
  [3] Time plot
  [4] Segment plot
- [5] Menu
+ [5] Fade effect
+ [6] Menu
 > 1
 Enter frame size in ms.
 > 20

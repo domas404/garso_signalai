@@ -373,7 +373,7 @@ def file_menu_dialog():
               "[2] ZCR plot\n",
               "[3] Time plot\n",
               "[4] Segment plot\n",
-              "[5] Fade in/fade out\n",
+              "[5] Fade effect\n",
               "[6] Menu")
         plot_menu_input = input("> ")
 
