@@ -1,12 +1,15 @@
 import numpy as np
 import os
 import matplotlib
+import math
+import copy
 from matplotlib import pyplot as plt
 from matplotlib import patches as mpatches
 from tkinter import Tk
 from tkinter.filedialog import askopenfilename
 from scipy.io import wavfile
 from datetime import timedelta
+import winsound
 
 font = {'size': 13}
 matplotlib.rc('font', **font)
@@ -26,6 +29,12 @@ class FileData:
             new_data = np.transpose(new_data)
             self.data = new_data.tolist()
 
+    def apply_fade(self, data_with_fade):
+        self.data_with_fade = np.array(data_with_fade, dtype=int)
+
+    def clone(self):
+        return copy.deepcopy(self)
+
 root = Tk()
 root.withdraw()
 
@@ -33,6 +42,8 @@ def read_data():
     file_path = askopenfilename()
     samplerate, data = wavfile.read(file_path)
     file = FileData(file_path, samplerate, data)
+    # winsound.PlaySound(file_path, winsound.SND_FILENAME)
+    # my_sound.play()
     root.update()
     return file
 
@@ -293,6 +304,56 @@ def handle_stereo_signal(file, plot_type):
                 ZCR.append(calculate_zero_crossing_rate(data_frames[i]))
             plot_stereo(file, ZCR, time, line_wt=1, y_label='Zero-Crossing Rate', time_frame=time_frame)
 
+def linear_fade(data, fade_value_count):
+    
+    fade_in_data, fade_out_data = [], []
+    fade_factor = 1/fade_value_count
+
+    for i in range(0, fade_value_count):
+        fading_factor = fade_factor * (i+1)
+        fade_in_data.append(round(data[i] * fading_factor))
+    
+    for i in range(len(data)-fade_value_count, len(data)):
+        fading_factor = 1 - fade_factor * (i - (len(data) - fade_value_count) + 1)
+        fade_out_data.append(round(data[i] * fading_factor))
+
+    return(fade_in_data, fade_out_data)
+
+def log_fade(data, fade_value_count):
+
+    fade_in_data, fade_out_data = [], []
+    fade_factor = (math.e**2)/fade_value_count
+
+    for i in range(0, fade_value_count):
+        fading_factor = 1 - math.exp(-fade_factor*(i + 1))
+        fade_in_data.append(round(data[i] * fading_factor))
+    
+    for i in range(len(data)-fade_value_count, len(data)):
+        fading_factor = 1 - math.exp(-fade_factor * (fade_value_count - (i - (len(data) - fade_value_count) + 1)))
+        fade_out_data.append(round(data[i] * fading_factor))
+
+    return(fade_in_data, fade_out_data)
+
+def handle_fade(file):
+
+    print(f"Audio length: {convert_time_to_readable_string(file.duration)}")
+    fade_time = int(input("Enter fade time in ms:\n> "))
+    fade_type = input("Choose fade type:\n[1] Linear\n[2] Logarithmic\n> ")
+    fade_value_count = round(file.samplerate*(fade_time/1000))
+
+    handle_mono_signal(file, "timePlot")
+
+    fade = linear_fade if fade_type == "1" else log_fade
+    fade_in_data, fade_out_data = fade(file.data, fade_value_count)
+
+    new_file_data = fade_in_data + list(file.data[fade_value_count:len(file.data)-fade_value_count]) + fade_out_data
+    new_file = file.clone()
+    new_file.data = new_file_data
+
+    handle_mono_signal(new_file, "timePlot")
+    wavfile.write(f'{file.file_name}', file.samplerate, np.int16(new_file_data))
+    del new_file
+
 def file_menu_dialog():
     file = read_data()
     input_ok = False
@@ -301,7 +362,13 @@ def file_menu_dialog():
         file.transpose_data()
 
     while(not input_ok):
-        print(f"FILE '{file.file_name}' MENU\n", "[1] Energy plot\n", "[2] ZCR plot\n", "[3] Time plot\n", "[4] Segment plot\n", "[5] Menu")
+        print(f"FILE '{file.file_name}' MENU\n",
+              "[1] Energy plot\n",
+              "[2] ZCR plot\n",
+              "[3] Time plot\n",
+              "[4] Segment plot\n",
+              "[5] Fade in/fade out\n",
+              "[6] Menu")
         plot_menu_input = input("> ")
 
         if(plot_menu_input == "1"):
@@ -317,6 +384,9 @@ def file_menu_dialog():
             handle_signal(file, "segmentPlot")
 
         elif(plot_menu_input == "5"):
+            handle_fade(file)
+
+        elif(plot_menu_input == "6"):
             del file
             menu_dialog()
             input_ok = True
