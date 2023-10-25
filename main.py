@@ -305,7 +305,7 @@ def handle_stereo_signal(file, plot_type):
             plot_stereo(file, ZCR, time, line_wt=1, y_label='Zero-Crossing Rate', time_frame=time_frame)
 
 def linear_fade(data, fade_value_count):
-    
+
     fade_in_data, fade_out_data = [], []
     fade_factor = 1/fade_value_count
 
@@ -340,18 +340,24 @@ def handle_fade(file):
     fade_time = int(input("Enter fade time in ms:\n> "))
     fade_type = input("Choose fade type:\n[1] Linear\n[2] Logarithmic\n> ")
     fade_value_count = round(file.samplerate*(fade_time/1000))
-
-    handle_mono_signal(file, "timePlot")
-
     fade = linear_fade if fade_type == "1" else log_fade
-    fade_in_data, fade_out_data = fade(file.data, fade_value_count)
-
-    new_file_data = fade_in_data + list(file.data[fade_value_count:len(file.data)-fade_value_count]) + fade_out_data
     new_file = file.clone()
-    new_file.data = new_file_data
 
-    handle_mono_signal(new_file, "timePlot")
-    wavfile.write(f'{file.file_name}', file.samplerate, np.int16(new_file_data))
+    if(file.channel_count == 1):
+        handle_mono_signal(file, "timePlot")
+        fade_in_data, fade_out_data = fade(file.data, fade_value_count)
+        new_file_data = fade_in_data + list(file.data[fade_value_count:len(file.data)-fade_value_count]) + fade_out_data
+        new_file.data = new_file_data
+        handle_mono_signal(new_file, "timePlot")
+    else:
+        handle_stereo_signal(file, "timePlot")
+        for i in range(0, file.channel_count):
+            fade_in_data, fade_out_data = fade(file.data[i], fade_value_count)
+            new_file_data = fade_in_data + list(file.data[i][fade_value_count:len(file.data[i])-fade_value_count]) + fade_out_data
+            new_file.data[i] = new_file_data
+        handle_stereo_signal(new_file, "timePlot")
+
+    wavfile.write(f'fade_applied/{file.file_name}', file.samplerate, np.int16(new_file_data))
     del new_file
 
 def file_menu_dialog():
