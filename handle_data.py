@@ -3,72 +3,95 @@ from scipy.io import wavfile
 from plot_data import plot_mono, plot_stereo
 from audio_effects import get_fade_data
 from audio_analysis import get_energy, get_zcr, get_normalized_data_frames, get_data_frames, find_segments, normalize_data
+from abc import ABC, abstractmethod
 
-def plot_energy(file, normalized_data_frames, plot):
-    """Plot energy graph."""
-    energy = get_energy(normalized_data_frames)
-    if file.channel_count == 1:
-        energy = energy[0]
-    plot(
-        file,
-        energy,
-        line_wt=1,
-        y_label='Energy')
+class PlotData(ABC):
 
-def plot_segments(file, normalized_data_frames, plot):
-    """Plot energy graph and divide graph into segments by step value."""
-    energy = get_energy(normalized_data_frames)
-    segments = []
-    step = float(input("Enter step size.\n> "))
-    for channel in energy:
-        segments.append(find_segments(channel, step))
-    if file.channel_count == 1:
-        energy = energy[0]
-        segments = segments[0]
-    plot(
-        file,
-        energy,
-        segments=segments,
-        line_wt=1,
-        y_label='Energy')
+    def plot_data(self, file, get_frames, plot):
+        self.set_frame_size(file)
+        self.get_data_frames(file, get_frames)
+        self.set_values(file)
+        self.set_segments(file)
+        self.plot_values(file, plot)
 
-def plot_zcr(file, data_frames, plot):
-    """Plot Zero-Crossing rate graph."""
-    zcr = get_zcr(data_frames)
-    print("zcr:", zcr)
-    normalized_zcr = []
-    for channel in zcr:
-        normalized_zcr.append(normalize_data(channel))
-    print("normalized_zcr:", normalized_zcr)
-    if file.channel_count == 1:
-        normalized_zcr = normalized_zcr[0]
-    plot(
-        file,
-        normalized_zcr,
-        line_wt=1,
-        y_label='Zero-Crossing Rate')
+    def set_frame_size(self, file):
+        file.set_frame_size()
 
-def plot_graph(file, get_frames, plot_type, plot):
-    file.set_time_frame()
-    if file.channel_count == 1:
-        data_frames = get_frames([file.data], file.samplerate, file.time_frame)
-    else:
-        data_frames = get_frames(file.data, file.samplerate, file.time_frame)
-    plot_type(file, data_frames, plot)
+    def get_data_frames(self, file, get_frames):
+        if file.channel_count == 1:
+            self.data_frames = get_frames([file.data], file.samplerate, file.frame_size_in_ms)
+        else:
+            self.data_frames = get_frames(file.data, file.samplerate, file.frame_size_in_ms)
+
+    @abstractmethod
+    def set_values(self, file):
+        pass
+
+    @abstractmethod
+    def plot_values(self, file, plot):
+        pass
+
+    def set_segments(self, file):
+        pass
+
+class PlotEnergy(PlotData):
+
+    def set_values(self, file):
+        self.energy = get_energy(self.data_frames)
+        if file.channel_count == 1:
+            self.energy = self.energy[0]
+
+    def plot_values(self, file, plot):
+        plot(file, self.energy, line_wt=1, y_label='Energy')
+
+class PlotZcr(PlotData):
+
+    def set_values(self, file):
+        zcr = get_zcr(self.data_frames)
+        self.normalized_zcr = []
+        for channel in zcr:
+            self.normalized_zcr.append(normalize_data(channel))
+        if file.channel_count == 1:
+            self.normalized_zcr = self.normalized_zcr[0]
+
+    def plot_values(self, file, plot):
+        plot(file, self.normalized_zcr, line_wt=1, y_label='Zero-Crossing Rate')
+
+class PlotSegments(PlotData):
+
+    def set_values(self, file):
+        self.energy = get_energy(self.data_frames)
+
+    def set_segments(self, file):
+        self.segments = []
+        step = float(input("Enter step size.\n> "))
+        for channel in self.energy:
+            self.segments.append(find_segments(channel, step))
+        if file.channel_count == 1:
+            self.energy = self.energy[0]
+            self.segments = self.segments[0]
+
+    def plot_values(self, file, plot):
+        plot(file, self.energy, segments=self.segments, line_wt=1, y_label='Energy')
 
 def handle_signal(file, plot_type, plot):
 
     if plot_type == "timePlot":
-        plot_mono(file, file.data, marker=False)
+        plot(file, file.data, marker=False)
     
     elif plot_type == "zeroCrossingRatePlot":
-        plot_graph(file, get_data_frames, plot_zcr, plot)
+        new_plot = PlotZcr()
+        new_plot.plot_data(file, get_data_frames, plot)
 
     elif plot_type == "energyPlot":
-        plot_graph(file, get_normalized_data_frames, plot_energy, plot)
+        new_plot = PlotEnergy()
+        new_plot.plot_data(file, get_normalized_data_frames, plot)
 
     elif plot_type == "segmentPlot":
-        plot_graph(file, get_normalized_data_frames, plot_segments, plot)
+        new_plot = PlotSegments()
+        new_plot.plot_data(file, get_normalized_data_frames, plot)
+
+    del new_plot
 
 def handle_fade(file):
 
@@ -81,7 +104,7 @@ def handle_fade(file):
         new_file_data = (fade_in_data
                         + list(file.data[fade_value_count:len(file.data)-fade_value_count])
                         + fade_out_data)
-        new_file.data = new_file_data
+        new_file.set_data(new_file_data)
         handle_signal(new_file, "timePlot", plot_mono)
     else:
         handle_signal(file, "timePlot", plot_stereo)

@@ -21,9 +21,9 @@ def convert_time_to_readable_string(time_in_seconds):
         time_string += ".000"
     return time_string
 
-def marker_input(duration):
+def timestamp_input(duration, stamp):
     print(f"Audio length: {convert_time_to_readable_string(duration)}")
-    print("Enter marker time.")
+    print(f"Enter {stamp} time.")
     mins = 0
     input_ok = False
     while not input_ok:
@@ -44,7 +44,7 @@ def create_legend_patch(label):
     return mpatches.Patch(color='none', label=label)
 
 def create_marker(playback_time):
-    marker_timestamp = marker_input(playback_time)
+    marker_timestamp = timestamp_input(playback_time, "marker")
     marker_position = create_legend_patch(
         label=f"Marker at:\n{convert_time_to_readable_string(marker_timestamp)}")
     if playback_time > 60:
@@ -67,11 +67,11 @@ def plot_file_property_legend(channel_count, samplerate, bit_depth):
     )
     plt.gca().add_artist(leg)
 
-def plot_time_legend(duration, marker, marker_time='', time_frame=0):
+def plot_time_legend(duration, marker, marker_time='', frame_size_in_ms=0):
     time_legend = []
-    if time_frame > 0:
-        time_frame_legend = create_legend_patch(f"Frame:\n{time_frame} ms")
-        time_legend.append(time_frame_legend)
+    if frame_size_in_ms > 0:
+        frame_size_legend = create_legend_patch(f"Frame:\n{frame_size_in_ms} ms")
+        time_legend.append(frame_size_legend)
     if marker:
         time_legend.append(marker_time)
     audio_time = create_legend_patch(
@@ -105,8 +105,8 @@ def plot_mono(file, data, marker=False, segments=None, line_wt=0.5, y_label=''):
         marker_time, marker_timestamp = create_marker(file.duration)
         plt.axvline(x=marker_timestamp, color='#ff3838')
         plot_time_legend(file.duration, marker, marker_time)
-    elif file.time_frame > 0:
-        plot_time_legend(file.duration, marker, time_frame=file.time_frame)
+    elif file.frame_size_in_ms > 0:
+        plot_time_legend(file.duration, marker, frame_size_in_ms=file.frame_size_in_ms)
     else:
         plot_time_legend(file.duration, marker)
 
@@ -140,8 +140,8 @@ def plot_stereo(file, data, marker = False, segments = None, line_wt = 0.5, y_la
     if marker:
         marker_time, marker_timestamp = create_marker(file.duration)
         plot_time_legend(file.duration, marker, marker_time)
-    elif file.time_frame > 0:
-        plot_time_legend(file.duration, marker, time_frame=file.time_frame)
+    elif file.frame_size_in_ms > 0:
+        plot_time_legend(file.duration, marker, frame_size_in_ms=file.frame_size_in_ms)
     else:
         plot_time_legend(file.duration, marker)
 

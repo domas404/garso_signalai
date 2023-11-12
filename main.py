@@ -7,6 +7,7 @@ import numpy as np
 from scipy.io import wavfile
 from handle_data import handle_signal, handle_fade
 from plot_data import plot_mono, plot_stereo
+from spectrum_analysis import analyze_spectrum
 
 class FileData:
     def __init__(self, file_path, samplerate, data):
@@ -17,7 +18,11 @@ class FileData:
         self.duration = len(data)/samplerate
         self.channel_count = 1 if len(data.shape) < 2 else data.shape[1]
         self.data_with_fade = None
-        self.time_frame = 0
+        self.frame_size_in_ms = 0
+
+    def set_data(self, data):
+        self.data = data
+        self.duration = len(data)/self.samplerate
 
     def transpose_data(self):
         if self.channel_count > 1:
@@ -31,8 +36,8 @@ class FileData:
     def clone(self):
         return copy.deepcopy(self)
 
-    def set_time_frame(self):
-        self.time_frame = int(input("Enter frame size in ms.\n> "))
+    def set_frame_size(self):
+        self.frame_size_in_ms = int(input("Enter frame size in ms.\n> "))
 
 root = Tk()
 root.withdraw()
@@ -46,9 +51,11 @@ def read_data():
 
 def prepare_data():
     file = read_data()
-    plot = plot_mono if file.channel_count == 1 else plot_stereo
     if file.channel_count > 1:
+        plot = plot_stereo
         file.transpose_data()
+    else:
+        plot = plot_mono
     return file, plot
 
 def file_menu_dialog():
@@ -62,7 +69,8 @@ def file_menu_dialog():
               "[3] Time plot\n",
               "[4] Segment plot\n",
               "[5] Fade effect\n",
-              "[6] Menu")
+              "[6] Spectrum analysis\n",
+              "[7] Menu")
         plot_menu_input = int(float(input("> ")))
 
         if plot_menu_input > 0 and plot_menu_input < 5:
@@ -72,6 +80,9 @@ def file_menu_dialog():
             handle_fade(file)
 
         elif plot_menu_input == 6:
+            analyze_spectrum(file)
+
+        elif plot_menu_input == 7:
             del file
             menu_dialog()
             input_ok = True

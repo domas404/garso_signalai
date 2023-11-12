@@ -37,11 +37,11 @@ def get_zcr(data_frames):
         zcr.append(calculate_zero_crossing_rate(frame))
     return zcr
 
-def get_frame_size(time_frame, samplerate):
-    return int(samplerate/1000*time_frame)
+def get_frame_size(frame_size_in_ms, samplerate):
+    return int(samplerate/1000*frame_size_in_ms)
 
-def split_data_into_frames(data, samplerate, time_frame):
-    frame_size = get_frame_size(time_frame, samplerate)
+def split_data_into_frames(data, samplerate, frame_size_in_ms):
+    frame_size = get_frame_size(frame_size_in_ms, samplerate)
     frame_overlap = 0.5
     frame_change_rate = int(frame_size*frame_overlap)
     data_frames = []
@@ -58,21 +58,21 @@ def split_data_into_frames(data, samplerate, time_frame):
     data_frames.append(single_frame)
     return data_frames
 
-def get_normalized_data_frames(data, samplerate, time_frame):
+def get_normalized_data_frames(data, samplerate, frame_size_in_ms):
     normalized_data_frames = []
     for channel in data:
         normalized_data_frames.append(
             split_data_into_frames(
                 normalize_data(channel),
                 samplerate,
-                time_frame
+                frame_size_in_ms
             ))
     return normalized_data_frames
 
-def get_data_frames(data, samplerate, time_frame):
+def get_data_frames(data, samplerate, frame_size_in_ms):
     data_frames = []
     for channel in data:
-        data_frames.append(split_data_into_frames(channel, samplerate, time_frame))
+        data_frames.append(split_data_into_frames(channel, samplerate, frame_size_in_ms))
     return data_frames
 
 def find_segments(data, step):
