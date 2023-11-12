@@ -82,16 +82,17 @@ def handle_signal(file, plot_type, plot):
     elif plot_type == "zeroCrossingRatePlot":
         new_plot = PlotZcr()
         new_plot.plot_data(file, get_data_frames, plot)
+        del new_plot
 
     elif plot_type == "energyPlot":
         new_plot = PlotEnergy()
         new_plot.plot_data(file, get_normalized_data_frames, plot)
+        del new_plot
 
     elif plot_type == "segmentPlot":
         new_plot = PlotSegments()
         new_plot.plot_data(file, get_normalized_data_frames, plot)
-
-    del new_plot
+        del new_plot
 
 def handle_fade(file):
 

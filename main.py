@@ -8,6 +8,7 @@ from scipy.io import wavfile
 from handle_data import handle_signal, handle_fade
 from plot_data import plot_mono, plot_stereo
 from spectrum_analysis import analyze_spectrum
+from abc import ABC, abstractmethod
 
 class FileData:
     def __init__(self, file_path, samplerate, data):
@@ -49,58 +50,118 @@ def read_data():
     root.update()
     return file
 
-def prepare_data():
-    file = read_data()
-    if file.channel_count > 1:
-        plot = plot_stereo
-        file.transpose_data()
-    else:
-        plot = plot_mono
-    return file, plot
+class FileProcessing:
 
-def file_menu_dialog():
-    file, plot = prepare_data()
-    plot_types = ["energyPlot", "zeroCrossingRatePlot", "timePlot", "segmentPlot"]
-    input_ok = False
-    while not input_ok:
-        print(f"FILE '{file.file_name}' MENU\n",
+    _state = None
+
+    def __init__(self, state):
+        self.set_state(state)
+        self.file_name = ""
+    
+    def set_state(self, state):
+        self._state = state
+        self._state.context = self
+
+    def init_file(self):
+        file = read_data()
+        self.file = file
+        self.file_name = file.file_name
+        self.prepare_data()
+    
+    def prepare_data(self):
+        if self.file.channel_count > 1:
+            self.plot = plot_stereo
+            self.file.transpose_data()
+        else:
+            self.plot = plot_mono
+    
+    def execute_function(self, func):
+        func(self.file)
+
+    def plot_file_data(self, plot_type):
+        handle_signal(self.file, plot_type, self.plot)
+
+    def choose_option(self):
+        self._state.print_options(self.file_name)
+        plot_menu_input = input("> ")
+        self.set_state(self._state.execute_option(plot_menu_input))
+
+class Dialog(ABC):
+
+    @property
+    def context(self):
+        return self._context
+
+    @context.setter
+    def context(self, context) -> None:
+        self._context = context
+
+    @abstractmethod
+    def print_options(self, file_name) -> None:
+        pass
+
+    @abstractmethod
+    def execute_option(self) -> None:
+        pass
+
+class MainMenu(Dialog):
+
+    def print_options(self, file_name):
+        print("MENU\n",
+              "[1] Open file\n",
+              "[2] Quit")
+
+    def execute_option(self, input):
+        if input == "1":
+            self.context.init_file()
+            return FileMenu()
+        elif input == "2":
+            sys.exit()
+
+class FileMenu(Dialog):
+
+    def print_options(self, file_name):
+        print(f"FILE '{file_name}' MENU\n",
+              "[1] Time domain plots\n",
+              "[2] Fade effect\n",
+              "[3] Spectrum analysis\n",
+              "[0] Main menu")
+
+    def execute_option(self, input):
+        if input == "0":
+            return MainMenu()
+        elif input == "1":
+            return TimeDomainPlotMenu()
+        elif input == "2":
+            self.context.execute_function(handle_fade)
+        elif input == "3":
+            self.context.execute_function(analyze_spectrum)
+        return FileMenu()
+
+class TimeDomainPlotMenu(Dialog):
+    options = {
+        "1": "energyPlot",
+        "2": "zeroCrossingRatePlot",
+        "3": "timePlot",
+        "4": "segmentPlot",
+        "0": "fileMenu"
+    }
+    def print_options(self, file_name):
+        print(f"'{file_name}' time domain plot MENU\n",
               "[1] Energy plot\n",
               "[2] ZCR plot\n",
               "[3] Time plot\n",
               "[4] Segment plot\n",
-              "[5] Fade effect\n",
-              "[6] Spectrum analysis\n",
-              "[7] Menu")
-        plot_menu_input = int(float(input("> ")))
+              "[0] File menu")
 
-        if plot_menu_input > 0 and plot_menu_input < 5:
-            handle_signal(file, plot_types[plot_menu_input-1], plot)
+    def execute_option(self, input):
+        if input == "0":
+            return FileMenu()
+        elif input in self.options:
+            self.context.plot_file_data(self.options[input])
+        return TimeDomainPlotMenu()
 
-        elif plot_menu_input == 5:
-            handle_fade(file)
-
-        elif plot_menu_input == 6:
-            analyze_spectrum(file)
-
-        elif plot_menu_input == 7:
-            del file
-            menu_dialog()
-            input_ok = True
-
-def menu_dialog():
-    input_ok = False
-    print("MENU\n", "[1] Open file\n", "[2] Quit")
-
-    while not input_ok:
-        menu_input = input("> ")
-
-        if menu_input == '2':
-            print("Exiting...")
-            sys.exit()
-
-        elif menu_input == '1':
-            input_ok = True
-            print("Processing...")
-            file_menu_dialog()
-
-menu_dialog()
+if __name__ == "__main__":
+    new_dialog = FileProcessing(MainMenu())
+    while True:
+        new_dialog.choose_option()
