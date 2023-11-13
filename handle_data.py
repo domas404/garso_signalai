@@ -1,6 +1,6 @@
 import numpy as np
 from scipy.io import wavfile
-from plot_data import plot_mono, plot_stereo
+from plot_data import new_plot
 from audio_effects import get_fade_data
 from audio_analysis import get_energy, get_zcr, get_normalized_data_frames, get_data_frames, find_segments, normalize_data
 from abc import ABC, abstractmethod
@@ -100,22 +100,22 @@ def handle_fade(file):
     new_file = file.clone()
 
     if file.channel_count == 1:
-        handle_signal(file, "timePlot", plot_mono)
+        handle_signal(file, "timePlot", new_plot.plot_mono_signal)
         fade_in_data, fade_out_data = fade(file.data, fade_value_count)
         new_file_data = (fade_in_data
                         + list(file.data[fade_value_count:len(file.data)-fade_value_count])
                         + fade_out_data)
         new_file.set_data(new_file_data)
-        handle_signal(new_file, "timePlot", plot_mono)
+        handle_signal(new_file, "timePlot", new_plot.plot_mono_signal)
     else:
-        handle_signal(file, "timePlot", plot_stereo)
+        handle_signal(file, "timePlot", new_plot.plot_stereo_signal)
         for i in range(0, file.channel_count):
             fade_in_data, fade_out_data = fade(file.data[i], fade_value_count)
             new_file_data = (fade_in_data
                             + list(file.data[i][fade_value_count:len(file.data[i])-fade_value_count])
                             + fade_out_data)
             new_file.data[i] = new_file_data
-        handle_signal(new_file, "timePlot", plot_stereo)
+        handle_signal(new_file, "timePlot", new_plot.plot_stereo_signal)
 
     wavfile.write(f'fade_applied/{file.file_name}', file.samplerate, np.int16(new_file_data))
     del new_file

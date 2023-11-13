@@ -6,7 +6,7 @@ from tkinter.filedialog import askopenfilename
 import numpy as np
 from scipy.io import wavfile
 from handle_data import handle_signal, handle_fade
-from plot_data import plot_mono, plot_stereo
+from plot_data import new_plot
 from spectrum_analysis import analyze_spectrum
 from abc import ABC, abstractmethod
 
@@ -70,10 +70,10 @@ class FileProcessing:
     
     def prepare_data(self):
         if self.file.channel_count > 1:
-            self.plot = plot_stereo
+            self.plot = new_plot.plot_stereo_signal
             self.file.transpose_data()
         else:
-            self.plot = plot_mono
+            self.plot = new_plot.plot_mono_signal
     
     def execute_function(self, func):
         func(self.file)
@@ -93,15 +93,15 @@ class Dialog(ABC):
         return self._context
 
     @context.setter
-    def context(self, context) -> None:
+    def context(self, context):
         self._context = context
 
     @abstractmethod
-    def print_options(self, file_name) -> None:
+    def print_options(self, file_name):
         pass
 
     @abstractmethod
-    def execute_option(self) -> None:
+    def execute_option(self):
         pass
 
 class MainMenu(Dialog):
