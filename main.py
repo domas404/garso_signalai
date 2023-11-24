@@ -18,7 +18,6 @@ class FileData:
         self.bit_depth = data.dtype.itemsize * 8
         self.duration = len(data)/samplerate
         self.channel_count = 1 if len(data.shape) < 2 else data.shape[1]
-        self.data_with_fade = None
         self.frame_size_in_ms = 0
 
     def set_data(self, data):
@@ -31,14 +30,14 @@ class FileData:
             new_data = np.transpose(new_data)
             self.data = new_data.tolist()
 
-    def apply_fade(self, data_with_fade):
-        self.data_with_fade = np.array(data_with_fade, dtype=int)
-
     def clone(self):
         return copy.deepcopy(self)
 
-    def set_frame_size(self):
-        self.frame_size_in_ms = int(input("Enter frame size in ms.\n> "))
+    def set_frame_size(self, frame=0):
+        if frame == 0:
+            self.frame_size_in_ms = int(input("Enter frame size in ms.\n> "))
+        else:
+            self.frame_size_in_ms = frame
 
 root = Tk()
 root.withdraw()

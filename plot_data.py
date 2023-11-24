@@ -10,9 +10,8 @@ matplotlib.rc('font', **font)
 
 class PlotTools:
 
-    def get_time(self, file, frame_length):
-        time = np.arange(0, file.duration*100, file.duration*100/frame_length)
-        time = time*0.01
+    def get_time(self, file, frame_length, start_time=0):
+        time = np.linspace(start_time, start_time + file.duration, frame_length)
         return time
 
     def convert_time_to_readable_string(self, time_in_seconds):
@@ -69,13 +68,14 @@ class PlotTools:
         )
         plt.gca().add_artist(leg)
 
-    def plot_time_legend(self, duration, marker, marker_time='', frame_size_in_ms=0):
+    def plot_time_legend(self, duration, marker=False, marker_time='', frame_size_in_ms=0):
         time_legend = []
         if frame_size_in_ms > 0:
-            frame_size_legend = self.create_legend_patch(f"Frame:\n{frame_size_in_ms} ms")
+            frame_size_legend = self.create_legend_patch(f"Interval:\n{frame_size_in_ms} ms")
             time_legend.append(frame_size_legend)
-        if marker:
-            time_legend.append(marker_time)
+        # if marker:
+        #     time_legend.append(marker_time)
+        # else:
         audio_time = self.create_legend_patch(
             f"File length:\n{self.convert_time_to_readable_string(duration)}")
         time_legend.append(audio_time)
@@ -100,17 +100,17 @@ class PlotTools:
         figure.suptitle(os.path.basename(file.file_name))
         return figure
     
-    def get_values(self, file, data):
+    def get_values(self, file, data, start_time=0):
         length = len(data) if file.channel_count == 1 else len(data[0])
-        x = self.get_time(file, length)
+        x = self.get_time(file, length, start_time=start_time)
         if file.duration >= 60:
             x = x/60
         return x, data
     
-    def plot_simple_graph(self, x, y, title):
+    def plot_simple_graph(self, x, y, title, line_wt=0.5):
         plt.title(title)
         plt.grid(color='#ddd')
-        plt.plot(x, y, linewidth=0.5, color='#4986cc')
+        plt.plot(x, y, linewidth=line_wt, color='#4986cc')
     
     def add_segments(self, x, segments, duration):
         if segments is not None:
@@ -120,8 +120,10 @@ class PlotTools:
                     color='#ff3838',
                     lw=0.5)
 
-    def add_labels(self, xlabel, ylabel, duration, y_label):
-        xlabel(("Time, min" if duration > 60 else "Time, s"), fontsize=13)
+    def add_labels(self, xlabel, ylabel, duration, y_label, x_label=""):
+        if x_label == "":
+            x_label = "Time, min" if duration > 60 else "Time, s"
+        xlabel(x_label, fontsize=13)
         ylabel(y_label, fontsize=13)
     
     def show_plot(self):
@@ -162,10 +164,10 @@ class Plot:
     def __init__(self, plot_tools):
         self.plot_tools = plot_tools
     
-    def plot_mono_signal(self, file, data, marker=False, segments=None, line_wt=0.5, y_label=''):
-        x, y = plot_tools.get_values(file, data)
+    def plot_mono_signal(self, file, data, marker=False, segments=None, line_wt=1, y_label='', start_time=0):
+        x, y = plot_tools.get_values(file, data, start_time=start_time)
         self.plot_tools.create_single_plot()
-        self.plot_tools.plot_simple_graph(x, y, file.file_name)
+        self.plot_tools.plot_simple_graph(x, y, file.file_name, line_wt)
         self.plot_tools.plot_file_property_legend(file.channel_count, file.samplerate, file.bit_depth)
         self.plot_tools.add_time_legend(file)
         self.plot_tools.add_segments(x, segments, file.duration)
@@ -181,7 +183,41 @@ class Plot:
         self.plot_tools.add_stereo_segments(x, segments, file)
         self.plot_tools.add_labels(figure.supxlabel, figure.supylabel, file.duration, y_label)
         self.plot_tools.show_plot()
-       
+
+    def plot_spectrum(self, file, x, y):
+        self.plot_tools.create_single_plot()
+        self.plot_tools.plot_simple_graph(x, y, file.file_name, 1)
+        self.plot_tools.add_labels(plt.xlabel, plt.ylabel, file.duration, "", "Frequency, Hz")
+        self.plot_tools.show_plot()
+    
+    def plot_time_and_interval(self, file, file_interval, interval_start=0):
+        x1, y1 = plot_tools.get_values(file, file.data)
+        x2, y2 = plot_tools.get_values(file_interval, file_interval.data, start_time=interval_start)
+
+        figure, _ = plt.subplots(nrows=2, ncols=1)
+        figure.set_figwidth(12)
+        figure.set_figheight(7)
+        figure.suptitle(os.path.basename(file.file_name))
+        
+        # plt.subplot(2, 1, 1)
+        # plot_tools.plot_file_property_legend(file.channel_count, file.samplerate, file.bit_depth)
+        # self.plot_tools.add_time_legend(file)
+
+        plt.subplot(2, 1, 1)
+        plt.grid(color='#ddd')
+        plt.plot(x1, y1, linewidth=0.5)
+        self.plot_tools.plot_file_property_legend(file.channel_count, file.samplerate, file.bit_depth)
+
+        plt.subplot(2, 1, 2)
+        plt.grid(color='#ddd')
+        plt.plot(x2, y2, linewidth=1)
+        plt.title("Interval")
+
+        self.plot_tools.plot_time_legend(file.duration, frame_size_in_ms=file_interval.frame_size_in_ms)
+
+        self.plot_tools.add_labels(figure.supxlabel, figure.supylabel, file.duration, y_label="")
+        plt.tight_layout()
+        plt.show()
 
 plot_tools = PlotTools()
 new_plot = Plot(plot_tools)
