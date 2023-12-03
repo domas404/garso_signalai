@@ -11,7 +11,6 @@ Nuskaityto failo duomenys atvaizduojami naudojant `matplotlib` biblioteką.
 * Signalo intervalo (arba pilno signalo) spektro amplitudės diagramos brėžimas.
 * *Fade effect* pritaikymas garso signalui, ir jo išsaugojimas.
 * Signalo spektro modifikavimas ir jo išsaugojimas.
-Programa nustato audio failo kanalų skaičių, diskretizavimo dažnį (kilohercais) bei kvantavimo gylį (bitais). Taip pat galima apskaičiuoti signalo energiją bei nulio kirtimų skaičių.
 
 ### Programos naudojimas
 
@@ -83,5 +82,5 @@ Choose how to modify:
  [3] move frequencies right
 >
 ```
-7. Laiko diagramos pvz.
+7. Energijos diagramos pvz.
 ![energy plot of Elephant.wav file](plots/elephant_energy_20.png)
