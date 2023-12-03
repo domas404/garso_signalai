@@ -1,11 +1,19 @@
 # Garso signalų apdorojimas
-## 1. Garso signalų atvaizdavimas bei analizė laiko srityje
+### Programos paskirtis
 
-Programa naudoja `scipy.io wavfile` biblioteką `*.wav` tipo audio failams nuskaityti.  
+Programa atlieka garso signalo analizę laiko bei dažnių srityse. Garso signalo analizė gali būti atliekama tik su `*.wav` tipo audio failais, kuriems nuskaityti naudojama `scipy.io wavfile` biblioteka.  
 
-Nuskaityto failo duomenys atvaizduojami naudojami `matplotlib` biblioteką. Programa nustato audio failo kanalų skaičių, diskretizavimo dažnį (kilohercais) bei kvantavimo gylį (bitais). Taip pat galima apskaičiuoti signalo energiją bei nulio kirtimų skaičių.
+Nuskaityto failo duomenys atvaizduojami naudojant `matplotlib` biblioteką.  
 
-### Naudojimasis programa
+### Programos funkcijos
+* Signalo laiko, energijos ar nulio kirtimų skaičiaus diagramų brėžimas.
+* Galimybė atskirti ir grafiškai atvaizduoti signalo energijos segmentus.
+* Signalo intervalo (arba pilno signalo) spektro amplitudės diagramos brėžimas.
+* *Fade effect* pritaikymas garso signalui, ir jo išsaugojimas.
+* Signalo spektro modifikavimas ir jo išsaugojimas.
+Programa nustato audio failo kanalų skaičių, diskretizavimo dažnį (kilohercais) bei kvantavimo gylį (bitais). Taip pat galima apskaičiuoti signalo energiją bei nulio kirtimų skaičių.
+
+### Programos naudojimas
 
 1. Paleidus programą, komandinėje eilutėje pateikiamas programos meniu. Pasirinkus pirmą variantą "Open file", iššoka standartinio failo pasirinkimo dialogas, kurio pagalba pasirenkamas norimas `*.wav` tipo failas. Norint baigti programos darbą pasirenkamas "Quit" variantas.
 ```
@@ -14,18 +22,25 @@ MENU
  [2] Quit
 > 
 ```
-2. Toliau reikia pasirinkti kokio tipo diagramą braižyti, arba grįžti į pagrindinį meniu.
+2. Toliau reikia pasirinkti kokio tipo veiksmus atlikti, arba grįžti į pagrindinį meniu.
 ```
 FILE 'Filename.wav' MENU
+ [1] Time domain plots
+ [2] Fade effect
+ [3] Spectrum analysis
+ [0] Main menu
+> 
+```
+3. Pasirinkus `Time domain plots`, galima pasirinkti kokio tipo diagramą brėžti. Pasirinkus `File menu` grįžtama į ankstesnį meniu.
+```
+'Filename.wav' time domain plot MENU
  [1] Energy plot
  [2] ZCR plot
  [3] Time plot
  [4] Segment plot
- [5] Fade effect
- [6] Menu
-> 
+ [0] File menu
 ```
-3. Pasirinkus `Energy` ir `ZCR` diagramas, reikia papildomai nurodyti šių parametrų skaičiavimui naudojamo kadro ilgį milisekundėmis.
+4. Pasirinkus `Energy`, `ZCR` diagramas, reikia papildomai nurodyti šių parametrų skaičiavimui naudojamo kadro ilgį milisekundėmis.
 ```
 > 1
 Enter frame size in ms.
@@ -39,15 +54,7 @@ Enter frame size in ms.
 Enter step size.
 > 
 ```
-Pasirinkus `Time` diagramą, pasirinktoje vietoje papildomai nurodomas žymeklio laikas.
-```
-> 3
-Audio length: 00:01.498
-Enter marker time.
-Seconds:
-> 
-```
-Pasirinkus `Fade effect`, reikia nurodyti *fade* efekto trukmę ir pasirinkti kitimo dėsnį.
+5. Pasirinkus `Fade effect`, reikia nurodyti *fade* efekto trukmę ir pasirinkti kitimo dėsnį.
 ```
 Audio length: 00:01.498
 Enter fade time in ms:
@@ -57,22 +64,24 @@ Choose fade type:
 [2] Logarithmic
 >
 ```
-4. Pateikiama diagrama, kurioje atvaizduojamas garso įrašas, kartu su esminiais parametrais. Pvz:
+6. Pasirinkus `Spectrum analysis`, nurodomas signalo intervalas, kurį norima anlizuoti:
 ```
-MENU
- [1] Open file
- [2] Quit
-> 1
-Processing...
-FILE 'Elephant.wav' MENU
- [1] Energy plot
- [2] ZCR plot
- [3] Time plot
- [4] Segment plot
- [5] Fade effect
- [6] Menu
-> 1
-Enter frame size in ms.
-> 20
+Audio length: 00:01.498
+Enter start time.
+Seconds:
+> 
+Audio length: 00:01.498
+Enter end time.
+Seconds:
+> 
 ```
+Toliau galima pasirinkti kokius veiksmus atlikti su signalo spektru:
+```
+Choose how to modify:
+ [1] remove frequencies
+ [2] add frequencies
+ [3] move frequencies right
+>
+```
+7. Laiko diagramos pvz.
 ![energy plot of Elephant.wav file](plots/elephant_energy_20.png)
