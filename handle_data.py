@@ -42,7 +42,7 @@ class PlotEnergy(PlotData):
             self.energy = self.energy[0]
 
     def plot_values(self, file, plot):
-        plot(file, self.energy, line_wt=1, y_label='Energy')
+        plot(file, self.energy, y_label='Energy')
 
 class PlotZcr(PlotData):
 
@@ -55,7 +55,7 @@ class PlotZcr(PlotData):
             self.normalized_zcr = self.normalized_zcr[0]
 
     def plot_values(self, file, plot):
-        plot(file, self.normalized_zcr, line_wt=1, y_label='Zero-Crossing Rate')
+        plot(file, self.normalized_zcr, y_label='Zero-Crossing Rate')
 
 class PlotSegments(PlotData):
 
@@ -72,12 +72,12 @@ class PlotSegments(PlotData):
             self.segments = self.segments[0]
 
     def plot_values(self, file, plot):
-        plot(file, self.energy, segments=self.segments, line_wt=1, y_label='Energy')
+        plot(file, self.energy, segments=self.segments, y_label='Energy')
 
 def handle_signal(file, plot_type, plot):
 
     if plot_type == "timePlot":
-        plot(file, file.data, marker=False)
+        plot(file, file.data)
     
     elif plot_type == "zeroCrossingRatePlot":
         new_plot = PlotZcr()

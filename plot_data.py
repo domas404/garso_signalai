@@ -5,7 +5,7 @@ from matplotlib import pyplot as plt
 from matplotlib import patches as mpatches
 import numpy as np
 
-font = {'size': 13}
+font = {'size': 11}
 matplotlib.rc('font', **font)
 
 class PlotTools:
@@ -22,7 +22,7 @@ class PlotTools:
             time_string += ".000"
         return time_string
 
-    def timestamp_input(self, duration, stamp):
+    def get_time_input(self, duration, stamp):
         print(f"Audio length: {self.convert_time_to_readable_string(duration)}")
         print(f"Enter {stamp} time.")
         mins = 0
@@ -44,14 +44,6 @@ class PlotTools:
     def create_legend_patch(self, label):
         return mpatches.Patch(color='none', label=label)
 
-    def create_marker(self, playback_time):
-        marker_timestamp = self.timestamp_input(playback_time, "marker")
-        marker_position = self.create_legend_patch(
-            label=f"Marker at:\n{self.convert_time_to_readable_string(marker_timestamp)}")
-        if playback_time > 60:
-            marker_timestamp = marker_timestamp/60
-        return marker_position, marker_timestamp
-
     def plot_file_property_legend(self, channel_count, samplerate, bit_depth):
         channels_label = self.create_legend_patch(
             f'{channel_count} channel{"s" if channel_count > 1 else ""}')
@@ -68,14 +60,11 @@ class PlotTools:
         )
         plt.gca().add_artist(leg)
 
-    def plot_time_legend(self, duration, marker=False, marker_time='', frame_size_in_ms=0):
+    def plot_time_legend(self, duration, frame_size_in_ms=0):
         time_legend = []
         if frame_size_in_ms > 0:
             frame_size_legend = self.create_legend_patch(f"Interval:\n{frame_size_in_ms} ms")
             time_legend.append(frame_size_legend)
-        # if marker:
-        #     time_legend.append(marker_time)
-        # else:
         audio_time = self.create_legend_patch(
             f"File length:\n{self.convert_time_to_readable_string(duration)}")
         time_legend.append(audio_time)
@@ -86,138 +75,106 @@ class PlotTools:
             bbox_to_anchor=(1.01, 0),
             loc='lower left',
             borderaxespad=0.)
-    
-    def create_single_plot(self):
-        figure = plt.figure()
-        figure.set_figwidth(11)
-        figure.set_figheight(5)
+
+    def create_subplots(self, rows, file_name, width=12, height=8):
+        figure, _ = plt.subplots(nrows=rows, ncols=1, sharey=True, sharex=True)
+        figure.set_figwidth(width)
+        figure.set_figheight(height)
+        figure.suptitle(os.path.basename(file_name))
         return figure
-    
-    def create_subplots(self, file):
-        figure, _ = plt.subplots(nrows=file.channel_count, ncols=1, sharey=True)
-        figure.set_figwidth(12)
-        figure.set_figheight(8)
-        figure.suptitle(os.path.basename(file.file_name))
-        return figure
-    
+
     def get_values(self, file, data, start_time=0):
         length = len(data) if file.channel_count == 1 else len(data[0])
         x = self.get_time(file, length, start_time=start_time)
         if file.duration >= 60:
             x = x/60
         return x, data
-    
-    def plot_simple_graph(self, x, y, title, line_wt=0.5):
-        plt.title(title)
-        plt.grid(color='#ddd')
-        plt.plot(x, y, linewidth=line_wt, color='#4986cc')
-    
-    def add_segments(self, x, segments, duration):
-        if segments is not None:
-            for segment in segments:
-                plt.axvline(
-                    x=x[segment] if duration < 60 else x[segment]/60,
-                    color='#ff3838',
-                    lw=0.5)
 
     def add_labels(self, xlabel, ylabel, duration, y_label, x_label=""):
         if x_label == "":
             x_label = "Time, min" if duration > 60 else "Time, s"
         xlabel(x_label, fontsize=13)
         ylabel(y_label, fontsize=13)
-    
-    def show_plot(self):
-        plt.tight_layout()
-        plt.show()
-    
+
     def add_figure_legend(self, file):
         plt.subplot(file.channel_count, 1, 1)
         self.plot_file_property_legend(file.channel_count, file.samplerate, file.bit_depth)
-    
-    def add_time_legend(self, file, marker=False):
-        if file.channel_count > 1:
-            plt.subplot(file.channel_count, 1, file.channel_count)
-        if file.frame_size_in_ms > 0:
-            self.plot_time_legend(file.duration, marker, frame_size_in_ms=file.frame_size_in_ms)
-        else:
-            self.plot_time_legend(file.duration, marker)
-    
-    def plot_simple_stereo_plot(self, x, y, file, line_wt=0.5):
-        colors = ['#4986CC', '#3F4756', '#A3ACBD', '#C66481', '#8D3150']
 
+    def add_time_legend(self, duration, channel_count, frame_size):
+        if channel_count > 1:
+            plt.subplot(channel_count, 1, channel_count)
+        if frame_size > 0:
+            self.plot_time_legend(duration, frame_size_in_ms=frame_size)
+        else:
+            self.plot_time_legend(duration)
+
+    def plot(self, x, y, file, line_wt=0.5):
+        colors = ['#4986CC', '#3F4756', '#A3ACBD', '#C66481', '#8D3150']
+        if file.channel_count == 1:
+            y = [y]
         for i, channel in enumerate(y):
             plt.subplot(file.channel_count, 1, i+1)
             plt.grid(color='#ddd')
             plt.plot(x, channel, linewidth=line_wt, color=colors[i%len(colors)])
-    
-    def add_stereo_segments(self, x, segments, file, line_wt=0.5):
+
+    def add_segments(self, x, segments, duration, channel_count):
         if segments is not None:
+            if channel_count == 1:
+                segments = [segments]
             for i, channel in enumerate(segments):
-                plt.subplot(file.channel_count, 1, i+1)
+                plt.subplot(channel_count, 1, i+1)
                 for segment in channel:
                     plt.axvline(
-                        x=x[segment] if file.duration < 60 else x[segment]/60,
+                        x=x[segment] if duration < 60 else x[segment]/60,
                         color='#ff3838',
-                        lw=line_wt)
+                        lw=0.5)
+
+    def show_plot(self):
+        plt.tight_layout()
+        plt.show()
 
 class Plot:
     def __init__(self, plot_tools):
-        self.plot_tools = plot_tools
-    
-    def plot_mono_signal(self, file, data, marker=False, segments=None, line_wt=1, y_label='', start_time=0):
-        x, y = plot_tools.get_values(file, data, start_time=start_time)
-        self.plot_tools.create_single_plot()
-        self.plot_tools.plot_simple_graph(x, y, file.file_name, line_wt)
-        self.plot_tools.plot_file_property_legend(file.channel_count, file.samplerate, file.bit_depth)
-        self.plot_tools.add_time_legend(file)
-        self.plot_tools.add_segments(x, segments, file.duration)
-        self.plot_tools.add_labels(plt.xlabel, plt.ylabel, file.duration, y_label)
-        self.plot_tools.show_plot()
+        self.plot = plot_tools
 
-    def plot_stereo_signal(self, file, data, marker=False, segments=None, line_wt=0.5, y_label=''):
-        x, y = plot_tools.get_values(file, data)
-        figure = self.plot_tools.create_subplots(file)
-        self.plot_tools.add_figure_legend(file)
-        self.plot_tools.add_time_legend(file)
-        self.plot_tools.plot_simple_stereo_plot(x, y, file)
-        self.plot_tools.add_stereo_segments(x, segments, file)
-        self.plot_tools.add_labels(figure.supxlabel, figure.supylabel, file.duration, y_label)
-        self.plot_tools.show_plot()
+    def plot_time(self, file, data, segments=None, y_label='', start_time=0, duration=0):
+        fig_height = 6
+        if file.channel_count == 1:
+            fig_height = 4
+        figure = self.plot.create_subplots(file.channel_count, file.file_name, 10, fig_height)
+        x, y = self.plot.get_values(file, data, start_time=start_time)
+        self.plot.add_figure_legend(file)
+        if duration == 0:
+            duration = file.duration
+        self.plot.add_time_legend(duration, file.channel_count, file.frame_size_in_ms)
+        self.plot.plot(x, y, file)
+        self.plot.add_segments(x, segments, file.duration, file.channel_count)
+        self.plot.add_labels(figure.supxlabel, figure.supylabel, file.duration, y_label)
+        self.plot.show_plot()
 
     def plot_spectrum(self, file, x, y):
-        self.plot_tools.create_single_plot()
-        self.plot_tools.plot_simple_graph(x, y, file.file_name, 1)
-        self.plot_tools.add_labels(plt.xlabel, plt.ylabel, file.duration, "", "Frequency, Hz")
-        self.plot_tools.show_plot()
-    
-    def plot_time_and_interval(self, file, file_interval, interval_start=0):
-        x1, y1 = plot_tools.get_values(file, file.data)
-        x2, y2 = plot_tools.get_values(file_interval, file_interval.data, start_time=interval_start)
+        figure = self.plot.create_subplots(file.channel_count, file.file_name, 9, 5)
+        self.plot.plot(x, y, file)
+        self.plot.add_labels(figure.supxlabel, figure.supylabel, file.duration, y_label="", x_label="Frequency, Hz")
+        self.plot.show_plot()
 
-        figure, _ = plt.subplots(nrows=2, ncols=1)
-        figure.set_figwidth(12)
-        figure.set_figheight(7)
-        figure.suptitle(os.path.basename(file.file_name))
-        
-        # plt.subplot(2, 1, 1)
-        # plot_tools.plot_file_property_legend(file.channel_count, file.samplerate, file.bit_depth)
-        # self.plot_tools.add_time_legend(file)
+    def compare_time_plots(self, file1, file2, start):
+        x1, y1 = self.plot.get_values(file1, file1.data, start_time=start)
+        x2, y2 = self.plot.get_values(file2, file2.data, start_time=start)
+        figure = self.plot.create_subplots(2, file1.file_name, 10, 6)
 
         plt.subplot(2, 1, 1)
         plt.grid(color='#ddd')
         plt.plot(x1, y1, linewidth=0.5)
-        self.plot_tools.plot_file_property_legend(file.channel_count, file.samplerate, file.bit_depth)
+        self.plot.plot_file_property_legend(file1.channel_count, file1.samplerate, file1.bit_depth)
 
         plt.subplot(2, 1, 2)
         plt.grid(color='#ddd')
-        plt.plot(x2, y2, linewidth=1)
-        plt.title("Interval")
+        plt.plot(x2, y2, linewidth=0.5)
 
-        self.plot_tools.plot_time_legend(file.duration, frame_size_in_ms=file_interval.frame_size_in_ms)
-
-        self.plot_tools.add_labels(figure.supxlabel, figure.supylabel, file.duration, y_label="")
-        plt.tight_layout()
-        plt.show()
+        self.plot.add_time_legend(file1.duration, file1.channel_count, file2.frame_size_in_ms)
+        self.plot.add_labels(figure.supxlabel, figure.supylabel, file1.duration, y_label="")
+        self.plot.show_plot()
 
 plot_tools = PlotTools()
 new_plot = Plot(plot_tools)

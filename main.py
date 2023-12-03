@@ -68,11 +68,9 @@ class FileProcessing:
         self.prepare_data()
     
     def prepare_data(self):
+        self.plot = new_plot.plot_time
         if self.file.channel_count > 1:
-            self.plot = new_plot.plot_stereo_signal
             self.file.transpose_data()
-        else:
-            self.plot = new_plot.plot_mono_signal
     
     def execute_function(self, func):
         func(self.file)

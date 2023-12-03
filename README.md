@@ -1,7 +1,7 @@
 # Garso signalų apdorojimas
 ## 1. Garso signalų atvaizdavimas bei analizė laiko srityje
 
-Programa naudoja `scipy.io wavfilw` biblioteką `*.wav` tipo audio failams nuskaityti.  
+Programa naudoja `scipy.io wavfile` biblioteką `*.wav` tipo audio failams nuskaityti.  
 
 Nuskaityto failo duomenys atvaizduojami naudojami `matplotlib` biblioteką. Programa nustato audio failo kanalų skaičių, diskretizavimo dažnį (kilohercais) bei kvantavimo gylį (bitais). Taip pat galima apskaičiuoti signalo energiją bei nulio kirtimų skaičių.
 
